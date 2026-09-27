@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+html {
+  direction: rtl;
+}
+
+body {
+  font-family: "Cairo", sans-serif;
+  text-align: right;
+}
+@theme {
+  /* Brand - Navy */
+  --color-navy-950: #001838;
+  --color-navy-900: #002448;
+  --color-navy-800: #002850;
+  --color-navy-700: #083060;
+
+  /* Brand - Blue */
+  --color-blue-500: #1080e8;
+  --color-blue-600: #0878d8;
+  --color-blue-700: #0858b0;
+
+  /* Backgrounds */
+  --color-surface: #f8fafc;
+  --color-surface-light: #f0f8fc;
+  --color-surface-blue: #e7f4fd;
+
+  /* Text */
+  --color-text-primary: #12365c;
+  --color-text-secondary: #55718e;
+  --color-text-muted: #8298ae;
+
+  /* Borders */
+  --color-border: #dce8f2;
+  --color-border-dark: #315577;
+
+  /* Common */
+  --color-white: #ffffff;
+}
