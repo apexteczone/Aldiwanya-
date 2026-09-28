@@ -1,17 +1,15 @@
-const express = require("express");
-const cors = require("cors");
-require("dotenv").config();
+import connectDB from "./DB/connection.js";
+import cors from 'cors';
 
-const app = express();
+const bootstrap = async (app,express) => {
+await connectDB();
 
 app.use(cors());
 app.use(express.json());
 
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "AlDiwanaya Platform API is running",
-  });
-});
 
-module.exports = app;
+
+app.get("/",(req,res)=>res.send("Hello world"))
+};
+
+        export default bootstrap;
