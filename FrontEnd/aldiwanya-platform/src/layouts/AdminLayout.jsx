@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { Sidebar } from '../components/admin/shared/Sidebar/Sidebar';
 import { Navbar } from '../components/admin/shared/Nav/Navbar';
 
@@ -7,11 +7,10 @@ export const AdminLayout = ({ children, onSearch }) => {
 
   return (
     <div className="flex h-screen bg-navy-950 overflow-hidden">
-      {/* 1. السايدبار ياخد الحالة والدالة */}
+    
       <Sidebar isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* 2. الناف بار ياخد نفس الحالة والدالة عشان الزرار يشتغل */}
         <Navbar 
           onSearch={onSearch} 
           isMobileOpen={isMobileOpen} 

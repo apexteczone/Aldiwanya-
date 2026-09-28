@@ -22,10 +22,9 @@ export default function AppRoutes() {
 
   return (
     <Routes>
-      {/* 1. مسار تسجيل الدخول (خارج الـ AdminLayout) */}
       <Route path="/auth/login" element={<LoginPage />} />
 
-      {/* 2. مسارات لوحة التحكم للأدمن (داخل AdminLayout) */}
+      
       <Route
         path="/admin/*"
         element={
@@ -47,7 +46,7 @@ export default function AppRoutes() {
         }
       />
 
-      {/* 3. التوجيه الافتراضي */}
+      
       <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

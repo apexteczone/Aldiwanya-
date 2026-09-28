@@ -35,7 +35,7 @@ export const Navbar = ({ onSearch, isMobileOpen, setIsMobileOpen }) => {
     fetchUserProfile();
   }, []);
 
-  // معالجة البحث وتمريره للمكون الأب
+  
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchQuery(value);
@@ -47,9 +47,9 @@ export const Navbar = ({ onSearch, isMobileOpen, setIsMobileOpen }) => {
   return (
     <header className="bg-navy-950 text-white h-16 px-4 md:px-6 flex items-center justify-between border-b border-border-dark select-none">
       
-      {/* الجزء الأيمن: زر فتح القائمة (للجوال) + حقل البحث */}
+      
       <div className="flex items-center gap-3 flex-1 md:flex-initial">
-        {/* 🍔 زر القائمة للسهولة في الجوال فقط */}
+       
         <button
           onClick={() => setIsMobileOpen?.(!isMobileOpen)}
           className="md:hidden p-2 rounded-xl bg-navy-900 border border-border-dark text-text-muted hover:text-white transition-colors"
@@ -58,7 +58,7 @@ export const Navbar = ({ onSearch, isMobileOpen, setIsMobileOpen }) => {
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* حقل البحث (يتكيف حسـب كبر الشاشة) */}
+       
         <div className="relative w-full sm:w-80 md:w-96">
           <input
             type="text"
@@ -71,7 +71,7 @@ export const Navbar = ({ onSearch, isMobileOpen, setIsMobileOpen }) => {
         </div>
       </div>
 
-      {/* الجزء الأيسر: التنبيهات والبروفايل */}
+     
       <div className="flex items-center gap-2 sm:gap-4 shrink-0 mr-2">
         {/* زر التنبيهات */}
         <div className="relative">
@@ -88,7 +88,7 @@ export const Navbar = ({ onSearch, isMobileOpen, setIsMobileOpen }) => {
           )}
         </div>
 
-        {/* البروفايل */}
+       
         <div className="flex items-center gap-2 sm:gap-3 pr-2 sm:pr-3 border-r border-border-dark cursor-pointer group">
           <ChevronDown className="w-4 h-4 text-text-muted group-hover:text-white transition-colors hidden sm:block" />
           <div className="text-left hidden md:block">

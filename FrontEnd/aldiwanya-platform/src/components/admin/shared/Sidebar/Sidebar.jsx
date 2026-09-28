@@ -1,4 +1,3 @@
-import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
 import logo from '/src/assets/whitelogo.png';
@@ -48,7 +47,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
     }
   };
 
-  // إغلاق القائمة عند تنقل المستخدم بين الصفحات في الجوّال
+  
   const handleNavClick = () => {
     if (setIsMobileOpen) {
       setIsMobileOpen(false);
@@ -57,7 +56,6 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
 
   return (
     <>
-      {/* 1. طبقة الخلفية المعتمة للشاشات الصغيرة عند فتح القائمة */}
       {isMobileOpen && (
         <div 
           onClick={() => setIsMobileOpen(false)}
@@ -65,7 +63,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
         />
       )}
 
-      {/* 2. حاوي الشريط الجانبي */}
+      {/* side*/}
       <aside 
         style={{ 
           backgroundImage: `linear-gradient(to top, rgba(0, 24, 56, 0.25) 0%, rgba(0, 24, 56, 1) 45%), url(${footerImage})` 
@@ -76,7 +74,6 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
         `}
       >
         <div className="flex flex-col h-full justify-between">
-          {/* الجزء العلوي: الشعار وزر الإغلاق في الجوال */}
           <div>
             {/* Logo */}
             <div className="flex items-center justify-between pb-2 mb-3 border-b border-border-dark">
@@ -84,7 +81,6 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
                 <img src={logo} alt="logo" className="w-44 md:w-49" />
               </div>
               
-              {/* زر إغلاق القائمة للشاشات الصغيرة */}
               <button 
                 onClick={() => setIsMobileOpen?.(false)}
                 className="md:hidden text-text-muted hover:text-white p-1 rounded-lg hover:bg-navy-900 transition-colors"
