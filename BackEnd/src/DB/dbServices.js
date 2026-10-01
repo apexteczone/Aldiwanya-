@@ -59,7 +59,7 @@ export const findByIdAndUpdate=async({
 }
 
 
-export const findOneAndUpdate=async({
+export const findOneAndReplace=async({
     model,
     filter ="",
     data={},
@@ -67,7 +67,7 @@ export const findOneAndUpdate=async({
     select="",
     populate=[]})=>{
     const document=await model
-    .findOneAndUpdate(filter,data,options)
+    .findOneAndReplace(filter,data,options)
     .select(select)
     .populate(populate);
     return document;

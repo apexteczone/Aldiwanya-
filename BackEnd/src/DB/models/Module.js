@@ -1,21 +1,16 @@
 import mongoose from "mongoose";
 
-const lessonSchema = new mongoose.Schema(
+const moduleSchema = new mongoose.Schema(
   {
-    module_id: {
+    course_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Module",
+      ref: "Course",
       required: true,
     },
 
     title: {
       type: String,
       required: true,
-      trim: true,
-    },
-
-    description: {
-      type: String,
       trim: true,
     },
 
@@ -39,6 +34,6 @@ const lessonSchema = new mongoose.Schema(
   }
 );
 
-const Lesson = mongoose.model("Lesson", lessonSchema);
+const Module = mongoose.model("Module", moduleSchema);
 
-export default Lesson;
+export default Module;
