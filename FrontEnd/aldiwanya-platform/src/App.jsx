@@ -1,17 +1,9 @@
-import './App.css'
-import LoginPage from './pages/auth/LoginPage'
+// import React from 'react';
+import AppRoutes from './routes/AppRoutes';
+import './App.css';
 
 function App() {
-  
-
-  return (
-    <>
-      <div className='text-2xl  text-white p-4 bg-navy-950'>مرحبا, انها الديـــوانية</div>
-      <div className='p-18 mx-28'>
-        <LoginPage/>
-      </div>
-    </>
-  )
+  return <AppRoutes />;
 }
 
-export default App
+export default App;
