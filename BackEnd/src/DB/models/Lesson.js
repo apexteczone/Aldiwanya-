@@ -2,43 +2,55 @@ import mongoose from "mongoose";
 
 const lessonSchema = new mongoose.Schema(
   {
-    module_id: {
+    moduleId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Module",
       required: true,
+      index: true,
     },
 
     title: {
       type: String,
       required: true,
       trim: true,
+      minlength: 2,
+      maxlength: 150,
     },
 
     description: {
       type: String,
       trim: true,
+      maxlength: 2000,
+      default: "",
     },
 
     status: {
       type: String,
-      enum: ["draft", "published", "archived"],
+      enum: ["draft", "published"],
       default: "draft",
+      index: true,
     },
 
     position: {
       type: Number,
+      required: true,
       default: 0,
-      min: 0,
+      index: true,
     },
   },
   {
-    timestamps: {
-      createdAt: "created_at",
-      updatedAt: "updated_at",
-    },
+    timestamps: true,
   }
 );
 
-const Lesson = mongoose.model("Lesson", lessonSchema);
+lessonSchema.index({
+  moduleId: 1,
+  position: 1,
+});
 
-export default Lesson;
+const LessonModel = mongoose.model(
+  "Lesson",
+  lessonSchema
+);
+
+export default LessonModel;

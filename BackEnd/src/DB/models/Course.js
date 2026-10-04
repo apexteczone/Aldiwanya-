@@ -6,11 +6,15 @@ const courseSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      minlength: 2,
+      maxlength: 150,
     },
 
     description: {
       type: String,
       trim: true,
+      maxlength: 2000,
+      default: "",
     },
 
     grade: {
@@ -22,43 +26,53 @@ const courseSchema = new mongoose.Schema(
     track: {
       type: String,
       trim: true,
+      default: null,
     },
 
     term: {
       type: String,
       trim: true,
+      default: null,
     },
 
-    academic_year: {
+    academicYear: {
       type: String,
       trim: true,
+      default: null,
     },
 
     thumbnail: {
       type: String,
-      trim: true,
+      default: null,
     },
 
     status: {
       type: String,
-      enum: ["draft", "published", "archived"],
+      enum: ["draft", "published"],
       default: "draft",
+      index: true,
     },
 
     position: {
       type: Number,
+      required: true,
       default: 0,
-      min: 0,
+      index: true,
     },
   },
   {
-    timestamps: {
-      createdAt: "created_at",
-      updatedAt: "updated_at",
-    },
+    timestamps: true,
   }
 );
 
-const Course = mongoose.model("Course", courseSchema);
+courseSchema.index({
+  grade: 1,
+  position: 1,
+});
 
-export default Course;
+const CourseModel = mongoose.model(
+  "Course",
+  courseSchema
+);
+
+export default CourseModel;

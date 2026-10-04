@@ -1,40 +1,47 @@
-const validation = (schema) => {
+import asyncHandler from "../utils/errorHandling/asyncHandler.js";
 
-  return (req, res, next) => {
 
-    const data = {
-      ...req.body,
-      ...req.params,
-      ...req.query,
-    };
 
-    const results = schema.validate(
-      data,
-      {
-        abortEarly: false,
-        allowUnknown: false,
-      }
-    );
+const validation = (
+  schema,
+  source = "body"
+) => {
 
-    if (results.error) {
+  return asyncHandler(
+    async (req, res, next) => {
 
-      const errorMessages =
-        results.error.details.map(
-          (obj) => obj.message
+      const { error } =
+        schema.validate(
+          req[source],
+          {
+            abortEarly: false,
+            allowUnknown: false,
+          }
         );
 
-      return next(
-        new Error(
-          errorMessages.join(", "),
-          {
-            cause: 422,
-          }
-        )
-      );
-    }
+      if (error) {
 
-    return next();
-  };
+        return next(
+          new Error(
+            error.details
+              .map(
+                (item) => item.message
+              )
+              .join(", "),
+            {
+              cause: 422,
+            }
+          )
+        );
+
+      }
+
+      return next();
+
+    }
+  );
 };
+
+
 
 export default validation;
