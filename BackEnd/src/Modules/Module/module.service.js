@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 
-import LessonModel from "../../DB/models/Lesson.js";
 import ModuleModel from "../../DB/models/Module.js";
+import CourseModel from "../../DB/models/Course.js";
+import LessonModel from "../../DB/models/Lesson.js";
 
 // Check ID
 const checkId = (id, name) => {
@@ -13,21 +14,17 @@ const checkId = (id, name) => {
 };
 
 
-// GET ALL LESSONS
-export const getLessons = async (
-  req,
-  res,
-  next
-) => {
+// GET ALL MODULES
+export const getModules = async (req, res, next) => {
   try {
-    const lessons = await LessonModel.find().sort({
+    const modules = await ModuleModel.find().sort({
       position: 1,
       createdAt: 1,
     });
 
     return res.status(200).json({
       success: true,
-      data: lessons,
+      data: modules,
     });
   } catch (error) {
     return next(error);
@@ -35,8 +32,8 @@ export const getLessons = async (
 };
 
 
-// GET LESSON BY ID
-export const getLessonById = async (
+// GET MODULE BY ID
+export const getModuleById = async (
   req,
   res,
   next
@@ -44,42 +41,9 @@ export const getLessonById = async (
   try {
     const { id } = req.params;
 
-    checkId(id, "lesson ID");
+    checkId(id, "module ID");
 
-    const lesson = await LessonModel.findById(id);
-
-    if (!lesson) {
-      return next(
-        new Error("Lesson not found", {
-          cause: 404,
-        })
-      );
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: lesson,
-    });
-  } catch (error) {
-    return next(error);
-  }
-};
-
-
-// CREATE LESSON
-export const createLesson = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const { moduleId } = req.body;
-
-    checkId(moduleId, "module ID");
-
-    const module = await ModuleModel.findById(
-      moduleId
-    );
+    const module = await ModuleModel.findById(id);
 
     if (!module) {
       return next(
@@ -89,17 +53,51 @@ export const createLesson = async (
       );
     }
 
-    const lastLesson = await LessonModel.findOne({
-      moduleId,
+    return res.status(200).json({
+      success: true,
+      data: module,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+
+// CREATE MODULE
+
+export const createModule = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const { courseId } = req.body;
+
+    checkId(courseId, "course ID");
+
+    const course = await CourseModel.findById(
+      courseId
+    );
+
+    if (!course) {
+      return next(
+        new Error("Course not found", {
+          cause: 404,
+        })
+      );
+    }
+
+    const lastModule = await ModuleModel.findOne({
+      courseId,
     }).sort({
       position: -1,
     });
 
-    const position = lastLesson
-      ? lastLesson.position + 1
+    const position = lastModule
+      ? lastModule.position + 1
       : 0;
 
-    const lesson = await LessonModel.create({
+    const module = await ModuleModel.create({
       ...req.body,
       position,
       status: "draft",
@@ -107,8 +105,8 @@ export const createLesson = async (
 
     return res.status(201).json({
       success: true,
-      message: "Lesson created successfully",
-      data: lesson,
+      message: "Module created successfully",
+      data: module,
     });
   } catch (error) {
     return next(error);
@@ -116,8 +114,8 @@ export const createLesson = async (
 };
 
 
-// UPDATE LESSON
-export const updateLesson = async (
+// UPDATE MODULE
+export const updateModule = async (
   req,
   res,
   next
@@ -125,26 +123,26 @@ export const updateLesson = async (
   try {
     const { id } = req.params;
 
-    checkId(id, "lesson ID");
+    checkId(id, "module ID");
 
-    const lesson = await LessonModel.findById(id);
+    const module = await ModuleModel.findById(id);
 
-    if (!lesson) {
+    if (!module) {
       return next(
-        new Error("Lesson not found", {
+        new Error("Module not found", {
           cause: 404,
         })
       );
     }
 
-    Object.assign(lesson, req.body);
+    Object.assign(module, req.body);
 
-    await lesson.save();
+    await module.save();
 
     return res.status(200).json({
       success: true,
-      message: "Lesson updated successfully",
-      data: lesson,
+      message: "Module updated successfully",
+      data: module,
     });
   } catch (error) {
     return next(error);
@@ -152,8 +150,8 @@ export const updateLesson = async (
 };
 
 
-// DELETE LESSON
-export const deleteLesson = async (
+// DELETE MODULE
+export const deleteModule = async (
   req,
   res,
   next
@@ -161,32 +159,37 @@ export const deleteLesson = async (
   try {
     const { id } = req.params;
 
-    checkId(id, "lesson ID");
+    checkId(id, "module ID");
 
-    const lesson = await LessonModel.findById(id);
+    const module = await ModuleModel.findById(id);
 
-    if (!lesson) {
+    if (!module) {
       return next(
-        new Error("Lesson not found", {
+        new Error("Module not found", {
           cause: 404,
         })
       );
     }
 
-    await LessonModel.findByIdAndDelete(id);
+  
+    await LessonModel.deleteMany({
+      moduleId: id,
+    });
+
+
+    await ModuleModel.findByIdAndDelete(id);
 
     return res.status(200).json({
       success: true,
-      message: "Lesson deleted successfully",
+      message: "Module deleted successfully",
     });
   } catch (error) {
     return next(error);
   }
 };
 
-
-// PUBLISH LESSON
-export const publishLesson = async (
+// PUBLISH MODULE
+export const publishModule = async (
   req,
   res,
   next
@@ -194,26 +197,26 @@ export const publishLesson = async (
   try {
     const { id } = req.params;
 
-    checkId(id, "lesson ID");
+    checkId(id, "module ID");
 
-    const lesson = await LessonModel.findById(id);
+    const module = await ModuleModel.findById(id);
 
-    if (!lesson) {
+    if (!module) {
       return next(
-        new Error("Lesson not found", {
+        new Error("Module not found", {
           cause: 404,
         })
       );
     }
 
-    const module = await ModuleModel.findById(
-      lesson.moduleId
+    const course = await CourseModel.findById(
+      module.courseId
     );
 
-    if (!module || module.status !== "published") {
+    if (!course || course.status !== "published") {
       return next(
         new Error(
-          "Lesson cannot be published before its module is published",
+          "Module cannot be published before its course is published",
           {
             cause: 400,
           }
@@ -221,22 +224,23 @@ export const publishLesson = async (
       );
     }
 
-    lesson.status = "published";
+    module.status = "published";
 
-    await lesson.save();
+    await module.save();
 
     return res.status(200).json({
       success: true,
-      message: "Lesson published successfully",
-      data: lesson,
+      message: "Module published successfully",
+      data: module,
     });
   } catch (error) {
     return next(error);
   }
 };
 
-// HIDE LESSON
-export const hideLesson = async (
+
+// HIDE MODULE
+export const hideModule = async (
   req,
   res,
   next
@@ -244,49 +248,50 @@ export const hideLesson = async (
   try {
     const { id } = req.params;
 
-    checkId(id, "lesson ID");
+    checkId(id, "module ID");
 
-    const lesson = await LessonModel.findById(id);
+    const module = await ModuleModel.findById(id);
 
-    if (!lesson) {
+    if (!module) {
       return next(
-        new Error("Lesson not found", {
+        new Error("Module not found", {
           cause: 404,
         })
       );
     }
 
-    lesson.status = "draft";
+    module.status = "draft";
 
-    await lesson.save();
+    await module.save();
 
     return res.status(200).json({
       success: true,
-      message: "Lesson hidden successfully",
-      data: lesson,
+      message: "Module hidden successfully",
+      data: module,
     });
   } catch (error) {
     return next(error);
   }
 };
 
-// REORDER LESSONS
-export const reorderLessons = async (
+
+// REORDER MODULES
+export const reorderModules = async (
   req,
   res,
   next
 ) => {
   try {
-    const { moduleId, ids } = req.body;
+    const { courseId, ids } = req.body;
 
-    checkId(moduleId, "module ID");
+    checkId(courseId, "course ID");
 
     const uniqueIds = new Set(ids);
 
     if (uniqueIds.size !== ids.length) {
       return next(
         new Error(
-          "Duplicate lesson IDs are not allowed",
+          "Duplicate module IDs are not allowed",
           {
             cause: 422,
           }
@@ -294,14 +299,14 @@ export const reorderLessons = async (
       );
     }
 
-    const lessons = await LessonModel.find({
-      moduleId,
+    const modules = await ModuleModel.find({
+      courseId,
     }).select("_id");
 
-    if (lessons.length !== ids.length) {
+    if (modules.length !== ids.length) {
       return next(
         new Error(
-          "You must provide all lesson IDs of this module",
+          "You must provide all module IDs of this course",
           {
             cause: 422,
           }
@@ -310,27 +315,27 @@ export const reorderLessons = async (
     }
 
     const existingIds = new Set(
-      lessons.map((lesson) =>
-        lesson._id.toString()
+      modules.map((module) =>
+        module._id.toString()
       )
     );
 
     for (const id of ids) {
       if (!existingIds.has(id)) {
         return next(
-          new Error("Invalid lesson ordering", {
+          new Error("Invalid module ordering", {
             cause: 422,
           })
         );
       }
     }
 
-    await LessonModel.bulkWrite(
+    await ModuleModel.bulkWrite(
       ids.map((id, index) => ({
         updateOne: {
           filter: {
             _id: id,
-            moduleId,
+            courseId,
           },
           update: {
             $set: {
@@ -341,17 +346,17 @@ export const reorderLessons = async (
       }))
     );
 
-    const updatedLessons =
-      await LessonModel.find({
-        moduleId,
+    const updatedModules =
+      await ModuleModel.find({
+        courseId,
       }).sort({
         position: 1,
       });
 
     return res.status(200).json({
       success: true,
-      message: "Lessons reordered successfully",
-      data: updatedLessons,
+      message: "Modules reordered successfully",
+      data: updatedModules,
     });
   } catch (error) {
     return next(error);

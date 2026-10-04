@@ -1,4 +1,6 @@
 import asyncHandler from "../utils/errorHandling/asyncHandler.js";
+import {verifyToken} from "../utils/token/token.js";
+import UserModel from "../DB/models/User.js";
 
 const authentication = () => {
 
