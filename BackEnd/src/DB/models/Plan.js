@@ -6,22 +6,20 @@ const planSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      maxlength: 100,
     },
 
-    duration_months: {
+    durationMonths: {
       type: Number,
-      enum: [1, 3, 12],
+      enum: [3, 12],
       required: true,
     },
 
-    amount_minor: {
+  
+    amountMinor: {
       type: Number,
       required: true,
-      min: 0,
-      validate: {
-        validator: Number.isInteger,
-        message: "amount_minor must be an integer",
-      },
+      min: 1,
     },
 
     currency: {
@@ -29,21 +27,30 @@ const planSchema = new mongoose.Schema(
       required: true,
       uppercase: true,
       trim: true,
+      minlength: 3,
+      maxlength: 3,
     },
 
     active: {
       type: Boolean,
       default: true,
+      index: true,
     },
   },
   {
-    timestamps: {
-      createdAt: "created_at",
-      updatedAt: "updated_at",
-    },
+    timestamps: true,
   }
 );
 
-const Plan = mongoose.model("Plan", planSchema);
 
-export default Plan;
+planSchema.index(
+  { durationMonths: 1 },
+  { unique: true }
+);
+
+const PlanModel = mongoose.model(
+  "Plan",
+  planSchema
+);
+
+export default PlanModel;
