@@ -461,118 +461,64 @@ export const forgotPassword =
 // RESET PASSWORD
 // ==================================================
 
-export const resetPassword =
-  async (
-    req,
-    res,
-    next
-  ) => {
+export const resetPassword = async (req, res, next) => {
+  const { token, newPassword } = req.body;
 
-    const {
-      token,
-      newPassword,
-    } = req.body;
+  const tokenHash = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
 
-
-    const tokenHash =
-      crypto
-        .createHash("sha256")
-        .update(token)
-        .digest("hex");
-
-
-    const resetToken =
-      await PasswordResetTokenModel
-        .findOneAndReplace(
-
-          {
-
-            tokenHash,
-
-            usedAt:
-              null,
-
-            expiresAt: {
-              $gt:
-                new Date(),
-            },
-
-          },
-
-          {
-
-            $set: {
-              usedAt:
-                new Date(),
-            },
-
-          },
-
-          {
-            new: true,
-          }
-
-        );
-
-
-    if (!resetToken) {
-
-      return next(
-        new Error(
-          "Invalid, expired or already used reset token",
-          {
-            cause: 400,
-          }
-        )
-      );
-
+  const resetToken = await PasswordResetTokenModel.findOneAndUpdate(
+    {
+      tokenHash,
+      usedAt: null,
+      expiresAt: {
+        $gt: new Date(),
+      },
+    },
+    {
+      $set: {
+        usedAt: new Date(),
+      },
+    },
+    {
+      new: true,
     }
+  );
 
+  if (!resetToken) {
+    return next(
+      new Error(
+        "Invalid, expired or already used reset token",
+        {
+          cause: 400,
+        }
+      )
+    );
+  }
 
-    const user =
-      await UserModel
-        .findById(
-          resetToken.userId
-        )
-        .select(
-          "+passwordHash"
-        );
+  const user = await UserModel.findById(resetToken.userId)
+    .select("+passwordHash");
 
+  if (!user) {
+    return next(
+      new Error("User Not Found", {
+        cause: 404,
+      })
+    );
+  }
 
-    if (!user) {
+  user.passwordHash = hash({
+    plainText: newPassword,
+  });
 
-      return next(
-        new Error(
-          "User Not Found",
-          {
-            cause: 404,
-          }
-        )
-      );
+  user.tokenVersion += 1;
 
-    }
+  await user.save();
 
-
-    user.passwordHash =
-      hash({
-        plainText:
-          newPassword,
-      });
-
-
-    user.tokenVersion += 1;
-
-
-    await user.save();
-
-
-    return res.status(200).json({
-
-      success: true,
-
-      message:
-        "Password reset successfully",
-
-    });
-
-  };
+  return res.status(200).json({
+    success: true,
+    message: "Password reset successfully",
+  });
+};

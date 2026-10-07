@@ -1,68 +1,53 @@
 import mongoose from "mongoose";
 
-const subscriptionSchema = new mongoose.Schema(
-  {
-    user_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+const subscriptionPeriodSchema =
+  new mongoose.Schema(
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+        index: true,
+      },
+
+      planId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Plan",
+        required: true,
+      },
+
+      paymentOrderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "PaymentOrder",
+        required: true,
+        unique: true,
+      },
+
+      startsAt: {
+        type: Date,
+        required: true,
+      },
+
+      endsAt: {
+        type: Date,
+        required: true,
+      },
     },
+    {
+      timestamps: true,
+    }
+  );
 
-    plan_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Plan",
-      required: true,
-    },
-
-    payment_order_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Payment",
-      required: true,
-    },
-
-    starts_at: {
-      type: Date,
-      required: true,
-    },
-
-    ends_at: {
-      type: Date,
-      required: true,
-    },
-  },
-  {
-    timestamps: {
-      createdAt: "created_at",
-      updatedAt: "updated_at",
-    },
-  }
-);
-
-subscriptionSchema.virtual("status").get(function () {
-  const now = new Date();
-
-  if (now < this.starts_at) {
-    return "none";
-  }
-
-  if (now >= this.starts_at && now < this.ends_at) {
-    return "active";
-  }
-
-  return "expired";
+subscriptionPeriodSchema.index({
+  userId: 1,
+  startsAt: 1,
+  endsAt: 1,
 });
 
-subscriptionSchema.set("toJSON", {
-  virtuals: true,
-});
+const SubscriptionPeriodModel =
+  mongoose.model(
+    "SubscriptionPeriod",
+    subscriptionPeriodSchema
+  );
 
-subscriptionSchema.set("toObject", {
-  virtuals: true,
-});
-
-const SubscriptionPeriod = mongoose.model(
-  "SubscriptionPeriod",
-  subscriptionSchema
-);
-
-export default SubscriptionPeriod;
+export default SubscriptionPeriodModel;
