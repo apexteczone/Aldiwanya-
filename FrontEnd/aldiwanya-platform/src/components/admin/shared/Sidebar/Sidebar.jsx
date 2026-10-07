@@ -22,13 +22,13 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
 
   const menuItems = [
     { title: 'الرئيسية', icon: Home, path: '/admin/dashboard' },
-    { title: 'إدارة الكورسات', icon: BookOpen, path: '/admin/courses' },
-    { title: 'الدروس والفيديوهات', icon: Video, path: '/admin/lessons' },
+    { title: 'إدارة المواد', icon: BookOpen, path: '/admin/courses' },
+    { title: 'الفيديوهات', icon: Video, path: '/admin/video' },
     { title: 'الملفات المجانية (PDF)', icon: FileText, path: '/admin/pdfs' },
     { title: 'الطلاب', icon: Users, path: '/admin/students' },
     { title: 'الاشتراكات', icon: Crown, path: '/admin/subscriptions' },
     { title: 'المدفوعات', icon: CreditCard, path: '/admin/payments' },
-    { title: 'التقارير والإحصائيات', icon: BarChart3, path: '/admin/reports' },
+    { title: ' ادارة الصفوف', icon: BarChart3, path: '/admin/grades' },
     { title: 'إعدادات المنصة', icon: Settings, path: '/admin/settings' },
   ];
 

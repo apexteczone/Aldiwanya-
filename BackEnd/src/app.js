@@ -1,43 +1,33 @@
-import connectDB from "./DB/connection.js";
+import connectDB from './DB/connection.js';
 import cors from 'cors';
-import authRouter from "./Modules/Auth/authController.js";
-import courseRouter from "./Modules/Course/courseController.js";
-import moduleRouter from "./Modules/Module/module.controller.js";
-import lessonRouter from "./Modules/Lesson/lessonController.js";
-import planRouter from "./Modules/Plan/Plan.controller.js";
-import userRouter from "./Modules/User/user.route.js"
-import contentRouter from "./Modules/Content/content.controller.js";
-import notFoundHandler from "./utils/errorHandling/NotFoundHandler.js";
-import globalErrorHandler from "./utils/errorHandling/globalErrorHandler.js";
+import authRouter from './Modules/Auth/authController.js';
+import gradeRouter from './Modules/Grade/grade.route.js';
+import courseRouter from './Modules/Course/course.route.js';
+import lessonRouter from './Modules/Lesson/lesson.route.js';
+import pdfRouter from './Modules/PDF/pdf.router.js';
+import moduleRouter from './Modules/Module/module.controller.js';
+import planRouter from './Modules/Plan/Plan.controller.js';
+import userRouter from './Modules/User/user.route.js';
+import contentRouter from './Modules/Content/content.controller.js';
+import notFoundHandler from './utils/errorHandling/NotFoundHandler.js';
+import globalErrorHandler from './utils/errorHandling/globalErrorHandler.js';
 
-const bootstrap = async (app,express) => {
-await connectDB();
-
-app.use(cors());
-app.use(express.json());
-  app.use(
-      express.urlencoded({
-        extended: true,
-      })
-    );
-
-
-app.get("/",(req,res)=>res.send("Hello world"))
-
-app.use('/auth',authRouter);
-app.use('/admin',courseRouter);
-app.use('/admin',moduleRouter);
-app.use('/admin',lessonRouter);
-app.use('/',contentRouter);
-app.use('/plan',planRouter);
-app.use('/user',userRouter);
-
-app.all("/{*splat}", notFoundHandler);
-
-app.use(globalErrorHandler);
-
-
+const bootstrap = async (app, express) => {
+  await connectDB();
+  app.use(cors());
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.get('/', (req, res) => res.json({ service: 'Aldiwanya API' }));
+  app.use('/auth', authRouter);
+  app.use('/admin/grades', gradeRouter);
+  app.use('/admin/courses', courseRouter);
+  app.use('/admin/lessons', lessonRouter);
+  app.use('/admin/pdfs', pdfRouter);
+  app.use('/admin', moduleRouter);
+  app.use('/plan', planRouter);
+  app.use('/user', userRouter);
+  app.use('/', contentRouter);
+  app.all('/{*splat}', notFoundHandler);
+  app.use(globalErrorHandler);
 };
-
-
-        export default bootstrap;
+export default bootstrap;

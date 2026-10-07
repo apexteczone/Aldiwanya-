@@ -2,9 +2,9 @@ import mongoose from "mongoose";
 
 const lessonSchema = new mongoose.Schema(
   {
-    moduleId: {
+    courseId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Module",
+      ref: "Course",
       required: true,
       index: true,
     },
@@ -22,6 +22,12 @@ const lessonSchema = new mongoose.Schema(
       trim: true,
       maxlength: 2000,
       default: "",
+    },
+
+    isFreePreview: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
 
     status: {
@@ -44,13 +50,10 @@ const lessonSchema = new mongoose.Schema(
 );
 
 lessonSchema.index({
-  moduleId: 1,
+  courseId: 1,
   position: 1,
 });
 
-const LessonModel = mongoose.model(
-  "Lesson",
-  lessonSchema
-);
+const LessonModel = mongoose.model("Lesson", lessonSchema);
 
 export default LessonModel;
