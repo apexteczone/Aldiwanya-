@@ -1,8 +1,7 @@
-// src/components/admin/courses/CourseImageCard.jsx
-// import React from 'react';
-import { Image, RefreshCw, Trash2 } from 'lucide-react';
+import React from 'react';
+import { Image, RefreshCw, Trash2, UploadCloud } from 'lucide-react';
 
-export function CourseImageCard({ imagePreview, onImageChange, onClearImage, courseTitle ,level }) {
+export function CourseImageCard({ imagePreview, onImageChange, onClearImage }) {
   return (
     <div className="bg-white border border-border rounded-2xl p-5 shadow-xs space-y-4">
       <div className="flex items-center gap-2 border-b border-border pb-3">
@@ -13,39 +12,37 @@ export function CourseImageCard({ imagePreview, onImageChange, onClearImage, cou
         </div>
       </div>
 
-      {/* المعاينة */}
-      <div className="relative rounded-2xl overflow-hidden border border-border bg-slate-900 shadow-xs group">
-        <img 
-          src={imagePreview} 
-          alt="صورة الكورس" 
-          className="w-full h-44 object-cover opacity-85"
-        />
-        
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 flex flex-col justify-end text-white">
-          <span className="text-[10px] bg-blue-600/80 px-2 py-0.5 rounded w-max mb-1 font-bold">{level || 'المستوى'}</span>
-          <h4 className="font-extrabold text-sm">{courseTitle || 'عنوان الكورس'}</h4>
-        </div>
-
-        <button 
-          type="button"
-          onClick={onClearImage}
-          className="absolute top-3 left-3 p-1.5 bg-black/60 hover:bg-rose-600 text-white rounded-lg transition-colors cursor-pointer"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+      <div className="space-y-3">
+        {imagePreview ? (
+          <div className="relative rounded-xl overflow-hidden border border-border group bg-slate-900 aspect-video">
+            <img 
+              src={imagePreview} 
+              alt="Course Banner" 
+              className="w-full h-full object-cover" 
+            />
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              <label className="p-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-lg text-white cursor-pointer transition-colors">
+                <RefreshCw className="w-4 h-4" />
+                <input type="file" accept="image/*" onChange={onImageChange} className="hidden" />
+              </label>
+              <button 
+                type="button" 
+                onClick={onClearImage}
+                className="p-2 bg-rose-500/80 hover:bg-rose-600 rounded-lg text-white transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <label className="border-2 border-dashed border-border hover:border-blue-500 bg-surface hover:bg-blue-50/50 rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all aspect-video">
+            <UploadCloud className="w-8 h-8 text-text-muted" />
+            <span className="text-xs font-bold text-text-secondary">اضغط هنا لرفع الصورة</span>
+            <span className="text-[10px] text-text-muted">PNG, JPG حتى 5 ميجابايت</span>
+            <input type="file" accept="image/*" onChange={onImageChange} className="hidden" />
+          </label>
+        )}
       </div>
-
-     
-      <label className="flex items-center justify-center gap-2 w-full py-2.5 bg-surface hover:bg-slate-100 border border-border rounded-xl font-bold text-text-secondary cursor-pointer transition-colors">
-        <RefreshCw className="w-4 h-4 text-blue-600" />
-        <span>تغيير الصورة</span>
-        <input 
-          type="file" 
-          accept="image/*" 
-          onChange={onImageChange} 
-          className="hidden" 
-        />
-      </label>
     </div>
   );
 }

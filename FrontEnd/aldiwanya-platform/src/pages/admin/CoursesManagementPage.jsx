@@ -8,180 +8,129 @@ import {
   Layers, 
   Plus, 
   Search, 
-  BarChart2, 
   Edit3, 
   Trash2, 
   MoreVertical,
   Play
 } from 'lucide-react';
 
-// استيراد المكونات المعاد استخدامها المعتمدة بالمنصة
 import { PaymentStatCard } from '../../components/admin/payments/PaymentStatCard';
 import { DataTable } from '../../components/admin/common/DataTable';
 import { Pagination } from '../../components/admin/common/Pagination';
+
+const API_BASE_URL = 'http://localhost:5000';
+
+// دالة مساعدة لتشكيل رابط الصورة بشكل صحيح
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=150&q=80';
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
+  
+  // استبدال الباك سلاش بـ فورورد سلاش وإزالة أي سلاش زائدة في البداية
+  const cleanPath = imagePath.replace(/\\/g, '/').replace(/^\//, '');
+  return `${API_BASE_URL}/${cleanPath}`;
+};
 
 export default function CoursesManagementPage() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
-  // حالات الفلاتر والبحث
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedStage, setSelectedStage] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
 
-  // 1. الإحصائيات العلوية الـ 4 المطابقة للصورة بالضبط
-  const [stats] = useState({
-    coursesCount: '24',
-    coursesChange: '+ 4 كورس جديد',
-    videosCount: '456',
-    videosChange: '+ 24 فيديو جديد',
-    enrolledStudents: '1,248',
-    enrolledStudentsChange: '+ 18% من الشهر الماضي',
-    totalLessons: '320',
-    totalLessonsChange: '+ 12 درس جديد',
+  const [stats, setStats] = useState({
+    coursesCount: '0',
+    videosCount: '0',
+    enrolledStudents: '0',
+    totalLessons: '0',
   });
 
-  // 2. داتا جدول الكورسات المطابقة للواجهة في الصورة
-  const [coursesData, setCoursesData] = useState([
-    {
-      id: 1,
-      title: 'مقدمة في الجبر',
-      subject: 'الرياضيات',
-      stage: 'الصف العاشر',
-      lessonsCount: 12,
-      videosCount: 12,
-      enrolledCount: '320',
-      createdAt: '2025-08-01',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=150&q=80'
-    },
-    {
-      id: 2,
-      title: 'الهندسة التحليلية',
-      subject: 'الرياضيات',
-      stage: 'الصف الحادي عشر',
-      lessonsCount: 16,
-      videosCount: 18,
-      enrolledCount: '456',
-      createdAt: '2025-07-15',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=150&q=80'
-    },
-    {
-      id: 3,
-      title: 'التفاضل والتكامل',
-      subject: 'الرياضيات',
-      stage: 'الصف الثاني عشر',
-      lessonsCount: 20,
-      videosCount: 24,
-      enrolledCount: '512',
-      createdAt: '2025-06-28',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=150&q=80'
-    },
-    {
-      id: 4,
-      title: 'الإحصاء والاحتمالات',
-      subject: 'الرياضيات',
-      stage: 'الصف الثاني عشر',
-      lessonsCount: 14,
-      videosCount: 14,
-      enrolledCount: '274',
-      createdAt: '2025-05-20',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=150&q=80'
-    },
-    {
-      id: 5,
-      title: 'مراجعة شاملة للصف العاشر',
-      subject: 'الرياضيات',
-      stage: 'الصف العاشر',
-      lessonsCount: 10,
-      videosCount: 10,
-      enrolledCount: '198',
-      createdAt: '2025-05-05',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=150&q=80'
-    },
-    {
-      id: 6,
-      title: 'بنك الأسئلة والتطبيقات',
-      subject: 'الرياضيات',
-      stage: 'الصف الحادي عشر',
-      lessonsCount: 15,
-      videosCount: 16,
-      enrolledCount: '402',
-      createdAt: '2025-04-18',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=150&q=80'
-    },
-    {
-      id: 7,
-      title: 'كورس الأساسيات',
-      subject: 'الرياضيات',
-      stage: 'الصف العاشر',
-      lessonsCount: 8,
-      videosCount: 9,
-      enrolledCount: '365',
-      createdAt: '2025-04-02',
-      status: 'pending',
-      thumbnail: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=150&q=80'
-    },
-    {
-      id: 8,
-      title: 'تحديات ومسائل متقدمة',
-      subject: 'الرياضيات',
-      stage: 'الصف الثاني عشر',
-      lessonsCount: 18,
-      videosCount: 20,
-      enrolledCount: '286',
-      createdAt: '2025-03-15',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=150&q=80'
-    },
-  ]);
+  const [coursesData, setCoursesData] = useState([]);
+  const [gradesList, setGradesList] = useState([]);
 
-  // جلب البيانات الفعلية من API عند التوفر
   useEffect(() => {
-    const fetchCourses = async () => {
-      setIsLoading(true);
+    const fetchGrades = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('/api/v1/admin/courses', {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { page: currentPage, search: searchQuery }
-        });
-        if (res.data && Array.isArray(res.data.data)) {
-          // setCoursesData(res.data.data);
+        const res = await axios.get(`${API_BASE_URL}/admin/grades/getall`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => axios.get(`${API_BASE_URL}/admin/grades`, { headers: { Authorization: `Bearer ${token}` } }));
+        
+        const gradesData = res?.data?.data || res?.data?.grades || res?.data || [];
+        if (Array.isArray(gradesData)) {
+          setGradesList(gradesData);
         }
       } catch (err) {
-        console.error('خطأ في جلب الكورسات:', err);
-      } finally {
-        setIsLoading(false);
+        console.error('خطأ في جلب الصفوف:', err);
       }
     };
+    fetchGrades();
+  }, []);
 
+  const fetchCourses = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_BASE_URL}/admin/courses/getall`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const responseData = res.data?.data || res.data?.courses || res.data || [];
+      if (Array.isArray(responseData)) {
+        setCoursesData(responseData);
+
+        const totalLessons = responseData.reduce((acc, curr) => acc + (curr.lessonsCount || 0), 0);
+        const totalVideos = responseData.reduce((acc, curr) => acc + (curr.videosCount || 0), 0);
+        const totalEnrolled = responseData.reduce((acc, curr) => acc + (curr.enrolledCount || 0), 0);
+
+        setStats({
+          coursesCount: responseData.length.toString(),
+          videosCount: totalVideos.toString(),
+          enrolledStudents: totalEnrolled.toString(),
+          totalLessons: totalLessons.toString(),
+        });
+      }
+    } catch (err) {
+      console.error('خطأ في جلب الكورسات:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCourses();
-  }, [currentPage, searchQuery]);
+  }, [currentPage]);
 
-  // معالجة حذف كورس
   const handleDeleteCourse = async (id) => {
     if (window.confirm('هل أنت تأكد من حذف هذا الكورس بكل محتوياته؟')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`/api/v1/admin/courses/${id}`, {
+        await axios.delete(`${API_BASE_URL}/admin/courses/${id}/delete`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setCoursesData(prev => prev.filter(course => course.id !== id));
+        fetchCourses();
       } catch (err) {
         console.error('فشل حذف الكورس:', err);
+        alert(err.response?.data?.message || 'حدث خطأ أثناء الحذف');
       }
     }
   };
 
-  // 3. تعريف أعمدة جدول الكورسات بنفس ترتيب وحدود الصورة
+  const filteredCourses = coursesData.filter((course) => {
+    const matchesSearch = course.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSubject = selectedSubject ? course.subject === selectedSubject : true;
+    
+    // فحص المرحلة سواء كانت كائن Populated أو ID مباشر
+    const gradeId = typeof course.grade === 'object' ? course.grade?._id : course.grade;
+    const matchesStage = selectedStage ? gradeId === selectedStage : true;
+    
+    const matchesStatus = selectedStatus ? course.status === selectedStatus : true;
+
+    return matchesSearch && matchesSubject && matchesStage && matchesStatus;
+  });
+
   const columns = [
     {
       header: '',
@@ -192,17 +141,24 @@ export default function CoursesManagementPage() {
       ),
       className: 'w-6 text-center'
     },
-    { header: '#', accessor: 'id', className: 'w-8 text-center font-bold text-text-muted text-xs' },
+    { 
+      header: '#', 
+      cell: (_, index) => <span className="font-bold text-text-muted text-xs">{index + 1}</span>,
+      className: 'w-8 text-center' 
+    },
     {
       header: 'الكورس',
       cell: (row) => (
         <div className="flex items-center gap-3">
-          {/* الصورة المصغرة مع علامة التشغيل التوضيحية */}
           <div className="relative w-14 h-9 rounded-lg overflow-hidden bg-slate-900 border border-border shrink-0 group">
             <img 
-              src={row.thumbnail} 
+              src={getImageUrl(row.coverImage || row.image)} 
               alt={row.title} 
               className="w-full h-full object-cover opacity-80" 
+              onError={(e) => {
+                e.target.onerror = null; 
+                e.target.src = 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=150&q=80';
+              }}
             />
             <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
               <div className="w-5 h-5 rounded-full bg-white/90 text-navy-950 flex items-center justify-center">
@@ -210,19 +166,49 @@ export default function CoursesManagementPage() {
               </div>
             </div>
           </div>
-          
+
           <span className="font-extrabold text-navy-950 text-xs hover:text-blue-600 cursor-pointer">
             {row.title}
           </span>
         </div>
       )
     },
-    { header: 'المادة', accessor: 'subject', className: 'text-text-secondary font-medium text-xs' },
-    { header: 'المرحلة', accessor: 'stage', className: 'text-text-secondary font-medium text-xs' },
-    { header: 'عدد الدروس', accessor: 'lessonsCount', className: 'font-bold text-navy-950 text-xs text-center' },
-    { header: 'عدد الفيديوهات', accessor: 'videosCount', className: 'font-bold text-navy-950 text-xs text-center' },
-    { header: 'الطلاب المسجلين', accessor: 'enrolledCount', className: 'font-bold text-navy-950 text-xs text-center' },
-    { header: 'تاريخ الإنشاء', accessor: 'createdAt', className: 'text-text-muted text-xs font-mono' },
+    { 
+      header: 'المادة', 
+      cell: (row) => row.subject || 'عام', 
+      className: 'text-text-secondary font-medium text-xs' 
+    },
+    { 
+      header: 'المرحلة', 
+      cell: (row) => {
+        // إذا كانت المرحلة Populated كـ Object
+        if (typeof row.grade === 'object' && row.grade !== null) {
+          return row.grade.name || row.grade.title || row.grade.gradeName || 'غير محدد';
+        }
+        // إذا كانت ID، يتم البحث عنها من قائمة الصفوف
+        const matched = gradesList.find(g => (g._id || g.id) === row.grade);
+        return matched ? (matched.name || matched.title || matched.gradeName) : 'غير محدد';
+      }, 
+      className: 'text-gray-800 font-medium text-xs' 
+    },
+    { 
+      header: 'عدد الدروس', 
+      cell: (row) => row.lessonsCount || 0, 
+      className: 'font-bold text-navy-950 text-xs text-center' 
+    },
+    { 
+      header: 'الطلاب المسجلين', 
+      cell: (row) => row.enrolledCount || row.studentsCount || 0, 
+      className: 'font-bold text-navy-950 text-xs text-center' 
+    },
+    { 
+      header: 'تاريخ الإنشاء', 
+      cell: (row) => {
+        const dateVal = row.createdAt || row.created_at;
+        return dateVal ? new Date(dateVal).toLocaleDateString('ar-EG') : '-';
+      }, 
+      className: 'text-text-muted text-xs font-mono' 
+    },
     {
       header: 'الحالة',
       cell: (row) => (
@@ -238,16 +224,9 @@ export default function CoursesManagementPage() {
     {
       header: 'الإجراءات',
       cell: (row) => (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <button 
-            title="إحصائيات الكورس"
-            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
-          >
-            <BarChart2 className="w-4 h-4" />
-          </button>
-
-          <button 
-            onClick={() => navigate(`/admin/courses/edit/${row.id}`)}
+            onClick={() => navigate(`/admin/courses/edit/${row._id}`)}
             title="تعديل الكورس"
             className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
           >
@@ -255,7 +234,7 @@ export default function CoursesManagementPage() {
           </button>
 
           <button 
-            onClick={() => handleDeleteCourse(row.id)}
+            onClick={() => handleDeleteCourse(row._id)}
             title="حذف الكورس"
             className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
           >
@@ -267,9 +246,7 @@ export default function CoursesManagementPage() {
   ];
 
   return (
-    <div className="space-y-5 select-none pb-10">
-      
-      {/* Header الصفحة مع زر إضافة كورس جديد */}
+    <div className="space-y-5 select-none pb-10 dir-rtl text-right">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-extrabold text-navy-950 flex items-center gap-2">
@@ -281,7 +258,6 @@ export default function CoursesManagementPage() {
           </p>
         </div>
 
-        {/* زر إضافة كورس جديد */}
         <button
           type="button"
           onClick={() => navigate('/admin/courses/new')}
@@ -292,42 +268,38 @@ export default function CoursesManagementPage() {
         </button>
       </div>
 
-      {/* 1. الكاردات الإحصائية الـ 4 المطابقة للصورة */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <PaymentStatCard 
           title="عدد الكورسات"
           value={stats.coursesCount}
-          changeText={stats.coursesChange}
+          changeText={`+${stats.coursesCount} كورس`}
           icon={BookOpen}
           theme="red"
         />
         <PaymentStatCard 
           title="إجمالي الفيديوهات"
           value={stats.videosCount}
-          changeText={stats.videosChange}
+          changeText={`+${stats.videosCount} فيديو`}
           icon={Video}
           theme="blue"
         />
         <PaymentStatCard 
           title="الطلاب المسجلين"
           value={stats.enrolledStudents}
-          changeText={stats.enrolledStudentsChange}
+          changeText={`+${stats.enrolledStudents} طالب`}
           icon={Users}
           theme="green"
         />
         <PaymentStatCard 
           title="إجمالي الدروس"
           value={stats.totalLessons}
-          changeText={stats.totalLessonsChange}
+          changeText={`+${stats.totalLessons} درس`}
           icon={Layers}
           theme="purple"
         />
       </div>
 
-      {/* 2. شريط الفلاتر والبحث */}
       <div className="bg-white border border-border rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-xs text-xs">
-        
-        {/* حقل البحث عن كورس */}
         <div className="relative flex-1 min-w-[220px]">
           <input
             type="text"
@@ -339,18 +311,17 @@ export default function CoursesManagementPage() {
           <Search className="w-4 h-4 text-text-muted absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
 
-        {/* الفلاتر المنسدلة */}
         <div className="flex flex-wrap items-center gap-2">
-          
           <select
             value={selectedSubject}
             onChange={(e) => setSelectedSubject(e.target.value)}
             className="bg-surface border border-border text-text-primary rounded-xl px-3 py-2.5 focus:outline-none cursor-pointer font-medium"
           >
             <option value="">كل المواد</option>
-            <option value="math">الرياضيات</option>
-            <option value="physics">الفيزياء</option>
-            <option value="chemistry">الكيمياء</option>
+            <option value="الرياضيات">الرياضيات</option>
+            <option value="الفيزياء">الفيزياء</option>
+            <option value="الكيمياء">الكيمياء</option>
+            <option value="علوم">علوم</option>
           </select>
 
           <select
@@ -359,9 +330,11 @@ export default function CoursesManagementPage() {
             className="bg-surface border border-border text-text-primary rounded-xl px-3 py-2.5 focus:outline-none cursor-pointer font-medium"
           >
             <option value="">كل المراحل</option>
-            <option value="10">الصف العاشر</option>
-            <option value="11">الصف الحادي عشر</option>
-            <option value="12">الصف الثاني عشر</option>
+            {gradesList.map((grade) => (
+              <option key={grade._id || grade.id} value={grade._id || grade.id}>
+                {grade.name || grade.title || grade.gradeName}
+              </option>
+            ))}
           </select>
 
           <select
@@ -371,25 +344,20 @@ export default function CoursesManagementPage() {
           >
             <option value="">كل الحالات</option>
             <option value="active">نشط</option>
-            <option value="pending">معلق</option>
+            <option value="inactive">معلق</option>
           </select>
-
         </div>
-
       </div>
 
-      {/* 3. جدول داتا الكورسات */}
-      <DataTable columns={columns} data={coursesData} isLoading={isLoading} />
+      <DataTable columns={columns} data={filteredCourses} isLoading={isLoading} />
 
-      {/* 4. مكون الباجينيشن الموحد */}
       <Pagination 
         currentPage={currentPage}
-        totalPages={5}
-        totalItems={24}
+        totalPages={1}
+        totalItems={filteredCourses.length}
         itemsPerPage={10}
         onPageChange={(page) => setCurrentPage(page)}
       />
-
     </div>
   );
 }

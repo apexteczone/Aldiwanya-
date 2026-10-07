@@ -1,5 +1,4 @@
 // src/components/admin/courses/CourseBasicInfoForm.jsx
-// import React from 'react';
 import { 
   BookOpen, 
   Bold, 
@@ -14,7 +13,10 @@ import {
   MoreHorizontal 
 } from 'lucide-react';
 
-export function CourseBasicInfoForm({ formData, handleChange, subjectsList, gradesList }) {
+export function CourseBasicInfoForm({ formData, handleChange, gradesList = [] }) {
+  
+  const safeGradesList = Array.isArray(gradesList) ? gradesList : [];
+
   return (
     <div className="bg-white border border-border rounded-2xl p-5 shadow-xs space-y-4">
       <div className="flex items-center gap-2 border-b border-border pb-3">
@@ -36,69 +38,43 @@ export function CourseBasicInfoForm({ formData, handleChange, subjectsList, grad
             <input
               type="text"
               name="title"
-              value={formData.title}
+              value={formData.title || ''}
               onChange={handleChange}
-              placeholder="مثال: مقدمة في الجبر"
+              placeholder="مثال : الرياضيات"
               className="w-full bg-surface text-text-primary rounded-xl pr-3 pl-9 py-2.5 border border-border focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+              required
             />
             <BookOpen className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
 
-        {/* المادة */}
-        <div className="space-y-1">
-          <label className="font-bold text-text-secondary block">المادة</label>
-          <select
-            name="subjectId"
-            value={formData.subjectId}
-            onChange={handleChange}
-            className="w-full bg-surface text-text-primary rounded-xl px-3 py-2.5 border border-border focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium cursor-pointer"
-          >
-            <option value="">اختر المادة</option>
-            {subjectsList.map((s) => (
-              <option key={s.id || s._id} value={s.id || s._id}>{s.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* مستوى الكورس */}
-        <div className="space-y-1">
-          <label className="font-bold text-text-secondary block">الترم الدراسي </label>
-          <select
-            name="level"
-            value={formData.level}
-            onChange={handleChange}
-            className="w-full bg-surface text-text-primary rounded-xl px-3 py-2.5 border border-border focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium cursor-pointer"
-          >
-            <option value="">اختر المستوى</option>
-            <option value="beginner">الاول</option>
-            <option value="intermediate">الثاني</option>
-          </select>
-        </div>
-
         {/* الصف الدراسي */}
         <div className="space-y-1">
-          <label className="font-bold text-text-secondary block">الصف الدراسي</label>
+          <label className="font-bold text-text-secondary block">
+            الصف الدراسي <span className="text-rose-500">*</span>
+          </label>
           <select
-            name="gradeId"
-            value={formData.gradeId}
+            name="grade"
+            value={formData.grade || ''}
             onChange={handleChange}
             className="w-full bg-surface text-text-primary rounded-xl px-3 py-2.5 border border-border focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium cursor-pointer"
+            required
           >
             <option value="">اختر الصف الدراسي</option>
-            {gradesList.map((g) => (
-              <option key={g.id || g._id} value={g.id || g._id}>{g.name}</option>
+            {safeGradesList.map((g) => (
+              <option key={g._id || g.id} value={g._id || g.id}>
+                {g.name || g.title || g.gradeName || 'صف بدون اسم'}
+              </option>
             ))}
           </select>
         </div>
 
       </div>
 
-      {/* وصف الكورس مع Rich Text Editor Toolbar */}
+      {/* وصف الكورس */}
       <div className="space-y-1 pt-2">
         <label className="font-bold text-text-secondary block">
           وصف الكورس 
-          {/* <span className="text-rose-500">*</span> */}
         </label>
         
         <div className="border border-border rounded-xl overflow-hidden bg-surface">
@@ -120,7 +96,7 @@ export function CourseBasicInfoForm({ formData, handleChange, subjectsList, grad
           <textarea
             name="description"
             rows={4}
-            value={formData.description}
+            value={formData.description || ''}
             onChange={handleChange}
             placeholder="اكتب وصف الكورس هنا ..."
             className="w-full p-3 bg-transparent text-text-primary focus:outline-none resize-none font-medium"

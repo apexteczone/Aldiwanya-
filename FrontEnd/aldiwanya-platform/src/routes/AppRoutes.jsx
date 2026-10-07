@@ -1,8 +1,8 @@
 // import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AdminLayout } from '../layouts/AdminLayout';
-
-// استيراد الصفحات الأساسية للمنصة
+import GradesManager from '../pages/admin/GradesManager';
+import AddGrade from '../pages/admin/AddGrade';
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage';
 import PaymentsPage from '../pages/admin/PaymentsPage';
 import SubscriptionsPage from '../pages/admin/SubscriptionsPage';
@@ -17,7 +17,7 @@ import CreateCoursePage from '../pages/admin/CreateCoursePage';
 // الصفحات الفرعية والجانبية
 // const CoursesManagementPage = () => <div className="p-4 bg-white rounded-2xl border border-border">إدارة الكورسات</div>;
 // const PdfManagementPage = () => <div className="p-4 bg-white rounded-2xl border border-border">إدارة ملفات PDF</div>;
-const ReportsPage = () => <div className="p-4 bg-white rounded-2xl border border-border">التقارير والإحصائيات</div>;
+// const ReportsPage = () => <div className="p-4 bg-white rounded-2xl border border-border">التقارير والإحصائيات</div>;
 const SettingsPage = () => <div className="p-4 bg-white rounded-2xl border border-border">إعدادات المنصة</div>;
 const LoginPage = () => <div className="p-4 bg-white rounded-2xl border border-border">صفحة تسجيل الدخول</div>;
 const NotFoundPage = () => (
@@ -45,29 +45,30 @@ export default function AppRoutes() {
             <Routes>
               <Route path="/" element={<Navigate to="dashboard" replace />} />
               
-              {/* الرئيسية / Dashboard */}
+              
               <Route path="dashboard" element={<AdminDashboardPage />} />
               
-              {/* إدارة الفيديوهات والدروس */}
+              
               <Route path="video" element={<VideosManagementPage />} />
               <Route path="upload" element={<UploadVideoPage />} />
               
-              {/* الكورسات والملفات */}
+              
               <Route path="courses" element={<CoursesManagementPage />} />
               <Route path="courses/new" element={<CreateCoursePage/>}/>
               <Route path="pdfs" element={<PdfManagementPage/>} />
               <Route path="pdfs/new" element={<UploadPdfPage />} />
 
-              {/* إدارة الطلاب والاشتراكات والمدفوعات */}
+              
               <Route path="students" element={<StudentsPage />} />
               <Route path="subscriptions" element={<SubscriptionsPage />} />
               <Route path="payments" element={<PaymentsPage />} />
               
-              {/* التقارير والإعدادات */}
-              <Route path="reports" element={<ReportsPage />} />
+              
+              <Route path="grades" element={<GradesManager/>} />
+              <Route path="grades/add" element={<AddGrade/>} />
               <Route path="settings" element={<SettingsPage />} />
               
-              {/* 404 داخل الـ Layout */}
+              {/* 404 */}
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </AdminLayout>

@@ -48,9 +48,6 @@ moduleSchema.index({
   position: 1,
 });
 
-const ModuleModel = mongoose.model(
-  "Module",
-  moduleSchema
-);
+const ModuleModel = mongoose.model("Module",moduleSchema);
 
 export default ModuleModel;

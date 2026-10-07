@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   await bootstrap(app, express);
   server.listen(PORT, () => {
-    console.log(`🚀 HTTP on http://localhost:${PORT}`);
+    console.log(`HTTP on http://localhost:${PORT}`);
   });
 };
 startServer();

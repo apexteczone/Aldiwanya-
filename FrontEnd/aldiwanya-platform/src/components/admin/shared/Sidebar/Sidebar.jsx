@@ -28,7 +28,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
     { title: 'الطلاب', icon: Users, path: '/admin/students' },
     { title: 'الاشتراكات', icon: Crown, path: '/admin/subscriptions' },
     { title: 'المدفوعات', icon: CreditCard, path: '/admin/payments' },
-    // { title: 'التقارير والإحصائيات', icon: BarChart3, path: '/admin/reports' },
+    { title: ' ادارة الصفوف', icon: BarChart3, path: '/admin/grades' },
     { title: 'إعدادات المنصة', icon: Settings, path: '/admin/settings' },
   ];
 

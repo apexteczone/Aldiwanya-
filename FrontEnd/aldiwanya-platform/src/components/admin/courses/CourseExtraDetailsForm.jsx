@@ -32,7 +32,7 @@ export function CourseExtraDetailsForm({ formData, handleChange }) {
 
         {/* عدد الدروس */}
         <div className="space-y-1">
-          <label className="font-bold text-text-secondary block">عدد الدروس</label>
+          <label className="font-bold text-text-secondary block">عدد الدروس التقريبي</label>
           <div className="relative">
             <input
               type="number"

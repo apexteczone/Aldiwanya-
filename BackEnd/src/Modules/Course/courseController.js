@@ -1,85 +1,110 @@
-import Router from "express";
+import * as courseService from "./course.service.js";
 
-import authentication, {
-  allowTo,
-} from "../../middlewares/authMiddleware.js";
+// GET ALL COURSES
+export const getCourses = async (req, res, next) => {
+  try {
+    const courses = await courseService.getCourses();
+    return res.status(200).json({ success: true, data: courses });
+  } catch (error) {
+    return next(error);
+  }
+};
 
-import asyncHandler from "../../utils/errorHandling/asyncHandler.js";
+// GET COURSE BY ID
+export const getCourseById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const course = await courseService.getCourseById(id);
+    return res.status(200).json({ success: true, data: course });
+  } catch (error) {
+    return next(error);
+  }
+};
 
-import validation from "../../middlewares/validation.middleware.js";
+// CREATE COURSE
+export const createCourse = async (req, res, next) => {
+  try {
+    const course = await courseService.createCourse(req.body, req.file);
+    return res.status(201).json({
+      success: true,
+      message: "Course created successfully",
+      data: course,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
 
-import * as courseServices from "./course.service.js";
+// UPDATE COURSE
+export const updateCourse = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const course = await courseService.updateCourse(id, req.body, req.file);
+    return res.status(200).json({
+      success: true,
+      message: "Course updated successfully",
+      data: course,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
 
-import {
-  courseIdSchema,
-  createCourseSchema,
-  updateCourseSchema,
-  reorderCoursesSchema,
-} from "./course.validation.js";
+// DELETE COURSE
+export const deleteCourse = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await courseService.deleteCourse(id);
+    return res.status(200).json({
+      success: true,
+      message: "Course and its lessons deleted successfully",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
 
-const router = Router();
+// PUBLISH COURSE
+export const publishCourse = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const course = await courseService.publishCourse(id);
+    return res.status(200).json({
+      success: true,
+      message: "Course published successfully",
+      data: course,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
 
+// HIDE COURSE
+export const hideCourse = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const course = await courseService.hideCourse(id);
+    return res.status(200).json({
+      success: true,
+      message: "Course hidden successfully",
+      data: course,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
 
-router.use(authentication());
-
-router.use(allowTo(["Admin"]));
-
-
-router.get(
-  "/courses",
-  asyncHandler(courseServices.getCourses)
-);
-
-
-router.get(
-  "/courses/:id",
-  validation(courseIdSchema, "params"),
-  asyncHandler(courseServices.getCourseById)
-);
-
-
-router.post(
-  "/courses/CreateCourse",
-  validation(createCourseSchema),
-  asyncHandler(courseServices.createCourse)
-);
-
-
-router.patch(
-  "/courses/:id/update",
-  validation(courseIdSchema, "params"),
-  validation(updateCourseSchema),
-  asyncHandler(courseServices.updateCourse)
-);
-
-
-
-router.delete(
-  "/courses/:id/delete",
-  validation(courseIdSchema, "params"),
-  asyncHandler(courseServices.deleteCourse)
-);
-
-
-
-router.patch(
-  "/courses/:id/publish",
-  validation(courseIdSchema, "params"),
-  asyncHandler(courseServices.publishCourse)
-);
-
-
-router.patch(
-  "/courses/:id/hide",
-  validation(courseIdSchema, "params"),
-  asyncHandler(courseServices.hideCourse)
-);
-
-
-router.put(
-  "/courses/order",
-  validation(reorderCoursesSchema),
-  asyncHandler(courseServices.reorderCourses)
-);
-
-export default router;
+// REORDER COURSES
+export const reorderCourses = async (req, res, next) => {
+  try {
+    const { gradeId, ids } = req.body;
+    const courses = await courseService.reorderCourses(gradeId, ids);
+    return res.status(200).json({
+      success: true,
+      message: "Courses reordered successfully",
+      data: courses,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
