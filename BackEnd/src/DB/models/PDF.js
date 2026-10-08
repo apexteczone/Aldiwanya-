@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const pdfSchema = new mongoose.Schema(
   {
+    type: {type:String,trim:true,maxlength:100,default:'مذكرة'},
     title: {
       type: String,
       required: true,
@@ -38,7 +39,7 @@ const pdfSchema = new mongoose.Schema(
 
     isFreePreview: {
       type: Boolean,
-      default: false,
+      default: true,
     },
 
     status: {

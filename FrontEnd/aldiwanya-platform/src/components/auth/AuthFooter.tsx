@@ -111,7 +111,7 @@ export const AuthFooter: React.FC = () => {
                 </a>
               </li>
               <li>
-                <a href="#library" className="hover:text-sky-300 transition-colors">
+                <a href="/library" className="hover:text-sky-300 transition-colors">
                   المكتبة المجانية
                 </a>
               </li>

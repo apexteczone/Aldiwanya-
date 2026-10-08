@@ -73,7 +73,7 @@ Run `npm run lint`, `npm run build`, and `npm test` at the root. The integration
 suite requires a disposable local MongoDB at 127.0.0.1:27028; it creates and removes
 only uniquely named `aldiwanya_integration_*` databases. It never reads DB_URI from
 the caller. Tests cover authentication, authorization, canonical content CRUD,
-protected uploads, migration, reset-token replay and disabled checkout.
+validated public PDF uploads, migration, reset-token replay and disabled checkout.
 
 Storage analytics, global admin search, marketing/footer links, social login and
 newsletter integrations still require product configuration. Payment cancellation
@@ -94,8 +94,13 @@ claims of completed external integrations.
 - Amna student components live inside the existing frontend, with real API auth,
   library, profile and subscriptions instead of local demo identities.
 - `/api/v1` is canonical; legacy API routes remain available for existing clients.
-- All admin reads and writes require an authenticated Admin role. Paid PDFs are
-  never exposed through a public static directory.
+- All admin reads and writes require an authenticated Admin role. All PDFs are free and publicly served from `/uploads/pdfs`, including files uploaded before this change. The `/library` page and PDF list/download API require no login. Upload/edit/delete operations still require Admin.
 - Course/module/lesson deletion rejects dependent content rather than cascading
   away another developer's work. No developer branch is deleted or history rewritten.
 
+
+## Public PDF policy and lesson creation
+
+The admin creates a Grade, a Course referencing that Grade, then a Lesson referencing that Course. The lesson form requires a course and has no module step; legacy modules and their APIs remain available for existing content.
+
+All PDF binaries in UPLOAD_DIR/pdfs are public, regardless of legacy isFreePreview or subscription state. Active records appear in the public library. Inactive, replaced or deleted records are removed from the listing but their retained binaries remain accessible by URL. This is deliberate for the requested public-folder policy. No database rewrite or physical file movement is needed. Do not store private documents in this directory.

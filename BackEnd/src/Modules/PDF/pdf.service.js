@@ -18,7 +18,7 @@ function uploadedPath(file) {
 export async function createPdf(data,file) {
  if(!file) throw new Error('PDF file is required',{cause:400});
  await validateParents(data.course,data.lesson);
- return PDF.create({...data,lesson:data.lesson||null,pdfUrl:uploadedPath(file)});
+ return PDF.create({...data,isFreePreview:true,lesson:data.lesson||null,pdfUrl:uploadedPath(file)});
 }
 export const getAllPdfsAdmin=()=>PDF.find().populate('course','title').populate('lesson','title').sort({createdAt:-1});
 export async function getPdfsByCourse(courseId) {await validateParents(courseId);return PDF.find({course:courseId,status:'active'}).populate('lesson','title').sort({createdAt:-1});}
@@ -27,7 +27,7 @@ export async function updatePdf(id,data,file) {
  checkId(id);const pdf=await PDF.findById(id);if(!pdf) throw new Error('PDF not found',{cause:404});
  await validateParents(data.course||pdf.course,data.lesson===undefined?pdf.lesson:data.lesson);
  if(data.lesson==='') data.lesson=null;
- Object.assign(pdf,data);
+ Object.assign(pdf,data,{isFreePreview:true});
  if(file) pdf.pdfUrl=uploadedPath(file);
  // Retain replaced physical files for a separately reviewed retention/backup policy.
  await pdf.save();return pdf;

@@ -80,7 +80,7 @@ export default function UploadPdfPage() {
   // التعامل مع تغير مدخلات الفورم
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value, ...(name === 'gradeId' ? {courseId: ''} : {}) }));
   };
 
   // رفع الملف وإرسال البيانات
@@ -97,7 +97,7 @@ export default function UploadPdfPage() {
     const dataPayload = new FormData();
     dataPayload.append('file', selectedFile);
     dataPayload.append('title', formData.title);
-    dataPayload.append('gradeId', formData.gradeId);
+    dataPayload.append('isFreePreview', 'true');
     dataPayload.append('course', formData.courseId);
     dataPayload.append('type', formData.type);
     dataPayload.append('status', formData.status);
@@ -156,7 +156,7 @@ export default function UploadPdfPage() {
             <span>رفع ملف PDF جديد</span>
           </h2>
           <p className="text-xs text-text-muted mt-1">
-            قم بإرفاق وتعبئة بيانات الملف المتاح للتحميل المجاني للطلاب
+            قم بإرفاق وتعبئة بيانات الملف المتاح للتحميل المجاني للجميع بدون تسجيل دخول
           </p>
         </div>
 
@@ -259,7 +259,7 @@ export default function UploadPdfPage() {
                 className="w-full bg-surface text-text-primary rounded-xl px-3 py-2.5 border border-border focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium cursor-pointer"
               >
                 <option value="">اختر الكورس...</option>
-                {coursesList.map((c) => (
+                {coursesList.filter(c => String(c.grade?._id || c.grade) === formData.gradeId).map((c) => (
                   <option key={c.id || c._id} value={c.id || c._id}>
                     {c.title || c.name}
                   </option>

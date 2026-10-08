@@ -2,6 +2,7 @@ import {lazy,Suspense} from 'react';
 // import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import StudentApp from '../pages/dashboard/StudentApp';
+import PublicLibraryPage from '../pages/courses/PublicLibraryPage';
 import PasswordPage from '../pages/auth/PasswordPage';
 import CourseDetailsPage from '../pages/courses/CourseDetailsPage';
 import AdminGuard from '../components/common/AdminGuard';
@@ -89,6 +90,7 @@ export default function AppRoutes() {
       <Route path="/login" element={<StudentApp />} />
       <Route path="/register" element={<StudentApp />} />
       <Route path="/dashboard" element={<StudentApp />} />
+      <Route path="/library" element={<PublicLibraryPage />} />
       <Route path="/forgot-password" element={<PasswordPage />} />
       <Route path="/reset-password" element={<PasswordPage reset />} />
       <Route path="/courses/:id" element={<CourseDetailsPage />} />

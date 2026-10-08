@@ -73,6 +73,14 @@ test('grade, course, module and lesson share one canonical schema',async()=>{
  assert.equal((await request('DELETE','/api/v1/admin/courses/'+courseId,undefined,adminToken)).status,409);
  assert.equal((await request('DELETE','/api/v1/admin/modules/'+moduleId+'/delete',undefined,adminToken)).status,409);
 });
+test('admin creates a grade, course and direct lesson without a module',async()=>{
+ const grade=await request('POST','/api/v1/admin/grades/create',{name:'Direct course grade'},adminToken);assert.equal(grade.status,201);
+ const course=await request('POST','/api/v1/admin/courses',{title:'Direct course',grade:grade.data._id,status:'published'},adminToken);assert.equal(course.status,201);
+ const lesson=await request('POST','/api/v1/admin/lessons',{title:'Direct lesson',courseId:course.data._id,status:'published'},adminToken);assert.equal(lesson.status,201);assert.equal(lesson.data.courseId,course.data._id);assert.equal(lesson.data.moduleId,undefined);
+ const detail=await request('GET','/api/v1/courses/'+course.data._id);assert.ok(detail.data.lessons.some(l=>l._id===lesson.data._id));
+ assert.equal((await request('POST','/api/v1/admin/lessons',{title:'Missing course'},adminToken)).status,422);
+ assert.equal((await request('POST','/api/v1/admin/lessons',{title:'Unknown course',courseId:new mongoose.Types.ObjectId().toString()},adminToken)).status,404);
+});
 test('video access and publication are enforced on the server',async()=>{
  for(const accessLevel of ['free','paid']){const r=await request('POST','/api/v1/admin/videos',{title:accessLevel+' video',lessonId,videoUrl:'https://example.com/video.mp4',accessLevel,status:'published'},adminToken);assert.equal(r.status,201,JSON.stringify(r));}
  const videos=await request('GET','/api/v1/library/lessons/'+lessonId+'/videos',undefined,studentToken);assert.equal(videos.data.length,1);assert.equal(videos.data[0].accessLevel,'free');
@@ -81,15 +89,22 @@ test('video access and publication are enforced on the server',async()=>{
  assert.equal((await request('GET','/api/v1/library/lessons/'+lessonId+'/videos',undefined,studentToken)).status,404);
  await request('PATCH','/api/v1/admin/courses/'+courseId+'/publish',{},adminToken);
 });
-test('upload signatures, PDF authorization and download work',async()=>{
+test('PDF uploads are admin-only while library and static downloads are public',async()=>{
  const invalid=new FormData();invalid.set('file',new Blob(['<script>alert(1)</script>'],{type:'application/pdf'}),'bad.pdf');invalid.set('title','Bad PDF');invalid.set('course',courseId);
  assert.equal((await request('POST','/api/v1/admin/pdfs',invalid,adminToken)).status,422);
- const valid=new FormData();valid.set('file',new Blob(['%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF'],{type:'application/pdf'}),'notes.pdf');valid.set('title','Free notes');valid.set('course',courseId);valid.set('isFreePreview','true');
+ const valid=new FormData();valid.set('file',new Blob(['%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF'],{type:'application/pdf'}),'notes.pdf');valid.set('title','Free notes');valid.set('type','مذكرة');valid.set('course',courseId);valid.set('isFreePreview','true');
  const r=await request('POST','/api/v1/admin/pdfs',valid,adminToken);assert.equal(r.status,201,JSON.stringify(r));pdfId=r.data._id;
  const response=await fetch(base+'/api/v1/library/pdfs/'+pdfId+'/download',{headers:{Authorization:'Bearer '+studentToken}});assert.equal(response.status,200);assert.match(await response.text(),/^%PDF-/);
  await request('PATCH','/api/v1/admin/pdfs/'+pdfId,{isFreePreview:false},adminToken);
- assert.equal((await request('GET','/api/v1/library/pdfs/'+pdfId+'/download',undefined,studentToken)).status,403);
- assert.equal((await request('GET','/api/v1/library/pdfs',undefined,studentToken)).data.length,0);
+ const {default:PDF}=await import('../src/DB/models/PDF.js');
+ await PDF.updateOne({_id:pdfId},{$set:{isFreePreview:false}}); // Older records must also remain public.
+ const listing=await request('GET','/api/v1/library/pdfs');assert.equal(listing.status,200);assert.equal(listing.data.length,1);
+ assert.equal(listing.data[0].isFreePreview,true);assert.match(listing.data[0].pdfUrl,/^\/uploads\/pdfs\/[^/]+\.pdf$/);
+ const direct=await fetch(base+listing.data[0].pdfUrl);assert.equal(direct.status,200);assert.match(direct.headers.get('content-disposition'),/attachment/);assert.match(await direct.text(),/^%PDF-/);
+ const anonymous=await fetch(base+'/api/v1/library/pdfs/'+pdfId+'/download');assert.equal(anonymous.status,200);await anonymous.arrayBuffer();
+ assert.equal((await request('POST','/api/v1/admin/pdfs',{},studentToken)).status,403);
+ assert.equal((await request('POST','/api/v1/admin/pdfs',{})).status,401);
+ const traversal=await fetch(base+'/uploads/pdfs/%2e%2e%2fserver.js');assert.notEqual(traversal.status,200);await traversal.text();
 });
 test('CORS, malformed input and missing routes fail safely',async()=>{
  assert.equal((await request('GET','/api/v1/courses',undefined,undefined,{Origin:'https://untrusted.example'})).status,403);
@@ -133,7 +148,8 @@ test('existing subscription unlocks paid content and appears in the profile',asy
  const payments=await request('GET','/api/v1/admin/payments',undefined,adminToken);assert.equal(payments.data[0].status,'success');assert.equal(payments.data[0].amountValue,2.5);
  const subscriptions=await request('GET','/api/v1/admin/subscriptions',undefined,adminToken);assert.equal(subscriptions.data[0].student,'Updated Student');
  await Subscription.updateOne({_id:subscription._id},{$set:{endsAt:new Date(Date.now()-1000)}});
- assert.equal((await request('GET','/api/v1/library/pdfs/'+pdfId+'/download',undefined,studentToken)).status,403);
+ const stillFree=await fetch(base+'/api/v1/library/pdfs/'+pdfId+'/download');assert.equal(stillFree.status,200);await stillFree.arrayBuffer();
+ assert.equal((await request('GET','/api/v1/library/lessons/'+lessonId+'/videos',undefined,studentToken)).data.length,1);
 });
 test('built frontend serves direct routes while unknown API routes remain JSON',async()=>{
  process.env.SERVE_FRONTEND='true';
@@ -141,7 +157,7 @@ test('built frontend serves direct routes while unknown API routes remain JSON',
  const site=app.listen(0,'127.0.0.1');await new Promise(resolve=>site.once('listening',resolve));
  const origin='http://127.0.0.1:'+site.address().port;
  try {
-  for(const route of ['/','/dashboard','/admin/courses']) {
+  for(const route of ['/','/dashboard','/admin/courses','/library']) {
    const r=await fetch(origin+route,{headers:{Accept:'text/html'}});
    assert.equal(r.status,200);assert.match(await r.text(),/<div id="root">/);
   }
@@ -160,4 +176,3 @@ test('password reset consumes the token once and revokes existing sessions',asyn
  assert.equal((await request('POST','/api/v1/auth/logout',{},studentToken)).status,200);
  assert.equal((await request('GET','/api/v1/user/me',undefined,studentToken)).status,401);
 });
-

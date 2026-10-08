@@ -33,6 +33,11 @@ export default async function bootstrap(app,express,{connect=true}={}) {
  app.use(express.urlencoded({extended:false,limit:'128kb'}));
  app.get('/health',(req,res)=>res.status(mongoose.connection.readyState===1?200:503).json({ok:mongoose.connection.readyState===1}));
  app.use('/uploads/images',express.static(path.join(uploadRoot,'images'),{dotfiles:'deny',index:false,setHeaders:res=>res.setHeader('X-Content-Type-Options','nosniff')}));
+ app.use('/uploads/pdfs',express.static(path.join(uploadRoot,'pdfs'),{dotfiles:'deny',index:false,fallthrough:false,setHeaders:res=>{
+  res.setHeader('X-Content-Type-Options','nosniff');
+  res.setHeader('Content-Disposition','attachment');
+  res.setHeader('Cross-Origin-Resource-Policy','cross-origin');
+ }}));
  const api=express.Router();
  const authLimit=rateLimit({windowMs:15*60*1000,limit:100,standardHeaders:'draft-8',legacyHeaders:false});
  api.use('/auth',authLimit,authRouter);

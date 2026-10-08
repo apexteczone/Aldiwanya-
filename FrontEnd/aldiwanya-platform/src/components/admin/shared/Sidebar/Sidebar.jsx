@@ -23,7 +23,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
   const menuItems = [
     { title: 'الرئيسية', icon: Home, path: '/admin/dashboard' },
     { title: 'إدارة المواد', icon: BookOpen, path: '/admin/courses' },
-    { title: 'الدروس والموديولات', icon: BookOpen, path: '/admin/lessons' },
+    { title: 'إدارة الدروس', icon: BookOpen, path: '/admin/lessons' },
     { title: 'خطط الاشتراك', icon: Crown, path: '/admin/plans' },
     { title: 'الفيديوهات', icon: Video, path: '/admin/video' },
     { title: 'الملفات المجانية (PDF)', icon: FileText, path: '/admin/pdfs' },

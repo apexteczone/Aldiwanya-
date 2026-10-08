@@ -29,7 +29,7 @@ export const AuthNavbar: React.FC = () => {
             <a href="#subscriptions" className="text-slate-300 hover:text-sky-400 transition-colors">
               الاشتراكات
             </a>
-            <a href="#library" className="text-slate-300 hover:text-sky-400 transition-colors">
+            <a href="/library" className="text-slate-300 hover:text-sky-400 transition-colors">
               المكتبة والمذكرات
             </a>
             <a href="#contact" className="text-slate-300 hover:text-sky-400 transition-colors">
@@ -108,7 +108,7 @@ export const AuthNavbar: React.FC = () => {
           <a href="#subscriptions" className="block py-2 px-3 rounded-lg hover:bg-blue-900/30">
             الاشتراكات
           </a>
-          <a href="#library" className="block py-2 px-3 rounded-lg hover:bg-blue-900/30">
+          <a href="/library" className="block py-2 px-3 rounded-lg hover:bg-blue-900/30">
             المكتبة والمذكرات
           </a>
           <a href="#contact" className="block py-2 px-3 rounded-lg hover:bg-blue-900/30">
