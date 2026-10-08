@@ -1,0 +1,28 @@
+# Local secrets; keep the documented example in Git.
+.env
+.env.*
+!.env.example
+*.local
+
+# Installed dependencies and generated output
+node_modules/
+dist/
+build/
+coverage/
+.nyc_output/
+.cache/
+
+# Runtime uploads and logs (stored separately from source control)
+uploads/
+logs/
+*.log
+*.pid
+*.pid.lock
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
