@@ -1,9 +1,8 @@
-import React from 'react';
 import { Calendar } from 'lucide-react';
 import towerBg from '/src/assets/kiwait2.png';
 
-export const WelcomeBanner = ({ userName = "أحمد محمد" }) => {
-  const todayDate = "السبت، 30 أغسطس 2025";
+export const WelcomeBanner = ({ userName = "بك" }) => {
+  const todayDate = new Date().toLocaleDateString('ar-KW', {dateStyle:'full'});
 
   return (
     <div 

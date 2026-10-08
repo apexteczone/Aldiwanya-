@@ -7,24 +7,27 @@
   "scripts": {
     "seed": "node src/DB/seed.js",
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "node --watch server.js",
+    "test": "node --test --test-isolation=none test/*.test.js",
+    "seed:admin": "node src/DB/seed.js",
+    "migrate:check": "node src/DB/migrate.js",
+    "migrate:apply": "node src/DB/migrate.js --apply",
+    "db:indexes": "node src/DB/indexes.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^18.0.4",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.0.0",
+    "helmet": "^8.0.0",
     "joi": "^18.2.9",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.11.0",
     "multer": "^2.4.0",
     "nodemailer": "^10.0.13"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
   }
 }

@@ -1,178 +1,48 @@
-import mongoose from "mongoose";
-import CourseModel from "../../DB/models/Course.js";
-import GradeModel from "../../DB/models/Grade.js";
-import LessonModel from "../../DB/models/Lesson.js";
+import mongoose from 'mongoose';
+import Course from '../../DB/models/Course.js';
+import Grade from '../../DB/models/Grade.js';
+import Module from '../../DB/models/Module.js';
+import Lesson from '../../DB/models/Lesson.js';
+import PDF from '../../DB/models/PDF.js';
+const check=id=>{if(!mongoose.isValidObjectId(id)) throw new Error('Invalid ID',{cause:422});};
+const published=value=>value==='active'?'published':value==='inactive'?'draft':value;
+export async function resolveGrade(value) {
+ if(typeof value==='number') {
+  const grade=await Grade.findOne({legacyNumber:value});
+  if(!grade) throw new Error('Legacy grade must be mapped by the schema migration',{cause:422});
+  return grade._id;
+ }
+ check(value);
+ if(!await Grade.exists({_id:value})) throw new Error('Grade not found',{cause:404});
+ return value;
+}
+export const getCourses=()=>Course.find().populate('grade','name').sort({position:1,createdAt:-1});
+export async function getCourseById(id) {check(id);const c=await Course.findById(id).populate('grade','name');if(!c)throw new Error('Course not found',{cause:404});return c;}
+export async function createCourse(data,file) {
+ const grade=await resolveGrade(data.grade);
+ const last=await Course.findOne({grade}).sort({position:-1});
+ return Course.create({...data,grade,status:published(data.status)||'draft',position:last?last.position+1:0,coverImage:file?'/uploads/images/'+file.filename:''});
+}
+export async function updateCourse(id,data,file) {
+ check(id);const c=await Course.findById(id);if(!c)throw new Error('Course not found',{cause:404});
+ if(data.grade!==undefined)data.grade=await resolveGrade(data.grade);
+ if(data.status)data.status=published(data.status);
+ if(file)data.coverImage='/uploads/images/'+file.filename;
+ Object.assign(c,data);return c.save();
+}
+export async function deleteCourse(id) {
+ check(id);
+ const dependent=await Promise.all([Module.exists({courseId:id}),Lesson.exists({courseId:id}),PDF.exists({course:id})]);
+ if(dependent.some(Boolean))throw new Error('Remove or reassign course content before deleting it',{cause:409});
+ if(!await Course.findByIdAndDelete(id))throw new Error('Course not found',{cause:404});
+}
+export const publishCourse=id=>updateCourse(id,{status:'published'});
+export const hideCourse=id=>updateCourse(id,{status:'draft'});
+export async function reorderCourses(gradeValue,ids) {
+ const grade=await resolveGrade(gradeValue);
+ const rows=await Course.find({grade}).select('_id');
+ if(new Set(ids).size!==ids.length||rows.length!==ids.length||rows.some(r=>!ids.includes(String(r._id))))throw new Error('Provide each course in this grade exactly once',{cause:422});
+ await Course.bulkWrite(ids.map((id,position)=>({updateOne:{filter:{_id:id,grade},update:{$set:{position}}}})));
+ return Course.find({grade}).sort({position:1});
+}
 
-const checkId = (id, name) => {
-  if (!mongoose.isValidObjectId(id)) {
-    throw new Error(`Invalid ${name}`, { cause: 422 });
-  }
-};
-
-// GET ALL COURSES
-export const getCourses = async () => {
-  return await CourseModel.find()
-    .populate("grade", "name")
-    .sort({
-      position: 1,
-      createdAt: -1, // الترتيب من الأحدث للأقدم
-    });
-};
-
-// GET COURSE BY ID
-export const getCourseById = async (id) => {
-  checkId(id, "course ID");
-
-  const course = await CourseModel.findById(id).populate("grade", "name");
-
-  if (!course) {
-    throw new Error("Course not found", { cause: 404 });
-  }
-
-  return course;
-};
-
-// CREATE COURSE
-export const createCourse = async (data, file) => {
-  const { grade } = data;
-
-  checkId(grade, "grade ID");
-
-  const gradeExists = await GradeModel.findById(grade);
-  if (!gradeExists) {
-    throw new Error("Grade not found", { cause: 404 });
-  }
-
-  const lastCourse = await CourseModel.findOne({ grade })
-    .sort({ position: -1 })
-    .select("position");
-
-  const position = lastCourse ? lastCourse.position + 1 : 0;
-
-  let coverImage = "";
-  if (file) {
-    coverImage = file.path || file.filename; // يدعم الرفع المحلي أو Cloudinary
-  }
-
-  const course = await CourseModel.create({
-    ...data,
-    coverImage,
-    position,
-  });
-
-  return course;
-};
-
-// UPDATE COURSE
-export const updateCourse = async (id, data, file) => {
-  checkId(id, "course ID");
-
-  const course = await CourseModel.findById(id);
-
-  if (!course) {
-    throw new Error("Course not found", { cause: 404 });
-  }
-
-  if (data.grade) {
-    checkId(data.grade, "grade ID");
-
-    const gradeExists = await GradeModel.findById(data.grade);
-
-    if (!gradeExists) {
-      throw new Error("Grade not found", { cause: 404 });
-    }
-  }
-
-  if (file) {
-    data.coverImage = file.path || file.filename;
-  }
-
-  Object.assign(course, data);
-  await course.save();
-
-  return course;
-};
-
-// DELETE COURSE
-export const deleteCourse = async (id) => {
-  checkId(id, "course ID");
-
-  const course = await CourseModel.findById(id);
-
-  if (!course) {
-    throw new Error("Course not found", { cause: 404 });
-  }
-
-  // Delete all lessons belonging to course
-  await LessonModel.deleteMany({ courseId: id });
-  await CourseModel.findByIdAndDelete(id);
-};
-
-// PUBLISH COURSE
-export const publishCourse = async (id) => {
-  checkId(id, "course ID");
-
-  const course = await CourseModel.findById(id);
-  if (!course) throw new Error("Course not found", { cause: 404 });
-
-  course.status = "active";
-  await course.save();
-  return course;
-};
-
-// HIDE COURSE
-export const hideCourse = async (id) => {
-  checkId(id, "course ID");
-
-  const course = await CourseModel.findById(id);
-  if (!course) throw new Error("Course not found", { cause: 404 });
-
-  course.status = "inactive";
-  await course.save();
-  return course;
-};
-
-// REORDER COURSES
-export const reorderCourses = async (grade, ids) => {
-  checkId(grade, "grade ID");
-
-  const gradeExists = await GradeModel.findById(grade);
-  if (!gradeExists) {
-    throw new Error("Grade not found", { cause: 404 });
-  }
-
-  const uniqueIds = new Set(ids);
-  if (uniqueIds.size !== ids.length) {
-    throw new Error("Duplicate course IDs are not allowed", { cause: 422 });
-  }
-
-  const courses = await CourseModel.find({ grade }).select("_id");
-  if (courses.length !== ids.length) {
-    throw new Error("You must provide all course IDs for this grade", { cause: 422 });
-  }
-
-  const existingIds = new Set(courses.map((course) => course._id.toString()));
-
-  for (const id of ids) {
-    if (!mongoose.isValidObjectId(id)) {
-      throw new Error("Invalid course ID", { cause: 422 });
-    }
-
-    if (!existingIds.has(id)) {
-      throw new Error("Invalid course ordering", { cause: 422 });
-    }
-  }
-
-  await CourseModel.bulkWrite(
-    ids.map((id, index) => ({
-      updateOne: {
-        filter: { _id: id, grade },
-        update: { $set: { position: index } },
-      },
-    }))
-  );
-
-  return await CourseModel.find({ grade })
-    .populate("grade", "name")
-    .sort({ position: 1 });
-};

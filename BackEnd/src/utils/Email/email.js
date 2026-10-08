@@ -36,6 +36,8 @@ export const sendPasswordResetEmail =
     resetUrl,
   }) => {
 
+    const escape=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    fullName=escape(fullName);
     await transporter.sendMail({
 
       from:

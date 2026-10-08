@@ -18,7 +18,7 @@ router.use(authentication());
 router.use(allowTo(["Admin"]));
 
 // Get all courses
-router.get("/getall", asyncHandler(courseController.getCourses));
+router.get(["/", "/getall"], asyncHandler(courseController.getCourses));
 
 // Get course by ID
 router.get(
@@ -29,7 +29,7 @@ router.get(
 
 // Create course (دعم رفع ملف coverImage عبر Multer)
 router.post(
-  "/Create",
+  ["/", "/Create", "/CreateCourse"],
   uploadImage.single("coverImage"),
   parseCourseData,
   validation(createCourseSchema),
@@ -38,7 +38,7 @@ router.post(
 
 // Update course
 router.patch(
-  "/:id/update",
+  ["/:id", "/:id/update"],
   uploadImage.single("coverImage"), // 👈 تم التعديل من upload إلى uploadImage
   validation(courseIdSchema, "params"),
   validation(updateCourseSchema),
@@ -47,7 +47,7 @@ router.patch(
 
 // Delete course
 router.delete(
-  "/:id/delete",
+  ["/:id", "/:id/delete"],
   validation(courseIdSchema, "params"),
   asyncHandler(courseController.deleteCourse)
 );

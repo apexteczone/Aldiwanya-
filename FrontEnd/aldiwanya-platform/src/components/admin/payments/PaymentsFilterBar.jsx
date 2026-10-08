@@ -1,5 +1,4 @@
-import React from 'react';
-import { Search, Calendar, Filter, ChevronDown } from 'lucide-react';
+import { Search, Calendar, Filter } from 'lucide-react';
 
 export const PaymentsFilterBar = ({ filters, setFilters, onSearch }) => {
   return (

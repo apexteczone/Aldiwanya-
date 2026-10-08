@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect } from 'react';
+import axios from '../../../../services/api';
 import { Search, Bell, ChevronDown, Menu } from 'lucide-react';
 
 export const Navbar = ({ onSearch, isMobileOpen, setIsMobileOpen }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [notificationsCount, setNotificationsCount] = useState(0);
+  const [notificationsCount] = useState(0);
   const [user, setUser] = useState({
     name: 'جاري التحميل...',
     role: 'مدير المنصة',
@@ -16,15 +16,15 @@ export const Navbar = ({ onSearch, isMobileOpen, setIsMobileOpen }) => {
     const fetchUserProfile = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('/api/v1/me', {
+        const response = await axios.get('/user/me', {
           headers: { Authorization: `Bearer ${token}` }
         });
         
         if (response.data) {
           setUser({
-            name: response.data.full_name || response.data.name || 'أحمد محمد',
-            role: response.data.role === 'admin' ? 'مدير المنصة' : 'مستخدم',
-            avatar: response.data.avatar_url || ''
+            name: response.data.data.user.fullName,
+            role: response.data.data.user.role === 'Admin' ? 'مدير المنصة' : 'مستخدم',
+            avatar: ''
           });
         }
       } catch (error) {

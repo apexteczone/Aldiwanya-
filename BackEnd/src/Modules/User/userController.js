@@ -1,3 +1,4 @@
+import {getSubscriptions} from "../Subscription/subscription.service.js";
 import * as userServices from "./user.service.js";
 
 export const getMyProfile = async (
@@ -12,10 +13,7 @@ export const getMyProfile = async (
     success: true,
     data: {
       user,
-      subscription: {
-        status: "none",
-        expiresAt: null,
-      },
+      subscriptions: await getSubscriptions(req.user._id),
     },
   });
 };

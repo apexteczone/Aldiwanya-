@@ -9,6 +9,7 @@ const lessonSchema = new mongoose.Schema(
       index: true,
     },
 
+    moduleId: {type: mongoose.Schema.Types.ObjectId, ref:'Module', index:true},
     title: {
       type: String,
       required: true,
@@ -57,3 +58,4 @@ lessonSchema.index({
 const LessonModel = mongoose.model("Lesson", lessonSchema);
 
 export default LessonModel;
+

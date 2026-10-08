@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import axios from 'axios'; 
+import axios from '../../../../services/api'; 
 import logo from '/src/assets/whitelogo.png';
 import footerImage from '/src/assets/kiwait.png';
 
@@ -23,6 +23,8 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
   const menuItems = [
     { title: 'الرئيسية', icon: Home, path: '/admin/dashboard' },
     { title: 'إدارة المواد', icon: BookOpen, path: '/admin/courses' },
+    { title: 'الدروس والموديولات', icon: BookOpen, path: '/admin/lessons' },
+    { title: 'خطط الاشتراك', icon: Crown, path: '/admin/plans' },
     { title: 'الفيديوهات', icon: Video, path: '/admin/video' },
     { title: 'الملفات المجانية (PDF)', icon: FileText, path: '/admin/pdfs' },
     { title: 'الطلاب', icon: Users, path: '/admin/students' },
@@ -34,7 +36,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
 
   const handleLogout = async () => {
     try {
-      await axios.post('/api/v1/auth/logout', {}, {
+      await axios.post('/auth/logout', {}, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -43,6 +45,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
       console.error('خطأ أثناء تسجيل الخروج:', error?.response?.data || error.message);
     } finally {
       localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
       navigate('/auth/login');
     }
   };

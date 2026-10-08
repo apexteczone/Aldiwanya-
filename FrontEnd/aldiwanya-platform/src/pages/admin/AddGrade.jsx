@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import axios from "axios";
+import { useState } from "react";
+import axios from '../../services/api';
 import { useNavigate, Link } from "react-router-dom";
 import { BookOpen, ArrowRight, Save, Loader2, AlertCircle } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = '';
 
 export default function AddGrade() {
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ export default function AddGrade() {
     setLoading(true);
     setError("");
 
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
 
     try {
       await axios.post(`${API_BASE_URL}/admin/grades/create`, formData, {

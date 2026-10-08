@@ -154,7 +154,7 @@ export const enablePlan = async (
       await PlanModel.findByIdAndUpdate(
         id,
         { active: true },
-        { new: true }
+        { returnDocument: 'after' }
       );
 
     if (!plan) {
@@ -192,7 +192,7 @@ export const disablePlan = async (
       await PlanModel.findByIdAndUpdate(
         id,
         { active: false },
-        { new: true }
+        { returnDocument: 'after' }
       );
 
     if (!plan) {

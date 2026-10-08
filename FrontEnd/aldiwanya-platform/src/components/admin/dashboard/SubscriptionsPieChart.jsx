@@ -1,12 +1,8 @@
 // import React from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 
-export const SubscriptionsPieChart = ({ activeCount = 856, data: customData }) => {
-  const defaultData = [
-    { name: 'اشتراك شهري', value: 42, color: '#1080e8' },
-    { name: 'اشتراك ربع سنوياً', value: 33, color: '#38bdf8' },
-    { name: 'اشتراك سنوي', value: 25, color: '#cbd5e1' },
-  ];
+export const SubscriptionsPieChart = ({ activeCount = 0, data: customData }) => {
+  const defaultData = [];
 
   const chartData = customData || defaultData;
 

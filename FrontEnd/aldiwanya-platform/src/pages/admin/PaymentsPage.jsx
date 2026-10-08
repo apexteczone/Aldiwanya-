@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../../services/api';
 import { Wallet, CheckCircle2, Clock, XCircle, Eye, MoreVertical } from 'lucide-react';
 import { PaymentStatCard } from '../../components/admin/payments/PaymentStatCard';
 import { PaymentsFilterBar } from '../../components/admin/payments/PaymentsFilterBar';
@@ -11,36 +11,25 @@ export default function PaymentsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [paymentsData, setPaymentsData] = useState([]);
   // إحصائيات الصفحة العلويّة
-  const [stats] = useState({
-    totalAmount: '36,420 EGP',
-    successCount: '1,248',
-    pendingCount: '156',
-    failedCount: '42',
-  });
+  const stats = {totalAmount: [...new Set(paymentsData.map(p=>p.currency))].map(currency=>paymentsData.filter(p=>p.status==='success'&&p.currency===currency).reduce((sum,p)=>sum+p.amountValue,0).toFixed(3)+' '+currency).join(' / ') || '0 KWD', successCount:paymentsData.filter(p=>p.status==='success').length,pendingCount:paymentsData.filter(p=>p.status==='pending').length,failedCount:paymentsData.filter(p=>p.status==='failed').length};
 
   // بيانات جدول المدفوعات المطابقة للتصميم
-  const [paymentsData, setPaymentsData] = useState([
-    { id: 1, trx: 'TRX-20250901-001', student: 'يوسف خالد', avatar: 'https://i.pravatar.cc/150?img=11', course: 'مقدمة في الجبر', amount: '250 EGP', method: 'فيزا / ماستر كارد', methodType: 'visa', date: '2025-09-01 14:25', status: 'success' },
-    { id: 2, trx: 'TRX-20250829-015', student: 'سارة أحمد', avatar: 'https://i.pravatar.cc/150?img=5', course: 'المعادلات البسيطة', amount: '1,200 EGP', method: 'فودافون كاش', methodType: 'vodafone', date: '2025-08-29 10:15', status: 'success' },
-    { id: 3, trx: 'TRX-20250828-006', student: 'علي محمد', avatar: 'https://i.pravatar.cc/150?img=12', course: 'قوانين الأسس والجذور', amount: '250 EGP', method: 'إنستا باي', methodType: 'instapay', date: '2025-08-28 18:40', status: 'pending' },
-    { id: 4, trx: 'TRX-20250825-019', student: 'نورة عبدالله', avatar: 'https://i.pravatar.cc/150?img=9', course: 'المتباينات البسيطة', amount: '1,200 EGP', method: 'بطاقة بنكية', methodType: 'bank', date: '2025-08-25 12:10', status: 'success' },
-    { id: 5, trx: 'TRX-20250820-003', student: 'فهد مبارك', avatar: 'https://i.pravatar.cc/150?img=68', course: 'الإحصاء', amount: '250 EGP', method: 'مدى', methodType: 'mada', date: '2025-08-20 09:30', status: 'failed' },
-    { id: 6, trx: 'TRX-20250818-011', student: 'ريم عبدالله', avatar: 'https://i.pravatar.cc/150?img=47', course: 'الهندسة التحليلية', amount: '1,200 EGP', method: 'أبل باي', methodType: 'apple', date: '2025-08-18 16:50', status: 'success' },
-  ]);
+
 
   // الربط مع الباك إند
   useEffect(() => {
     const fetchPayments = async () => {
       setIsLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('/api/v1/admin/payments', {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const res = await axios.get('/admin/payments', {
           headers: { Authorization: `Bearer ${token}` },
           params: { page: currentPage, ...filters }
         });
         if (res.data) {
-          // setPaymentsData(res.data.data);
+          setPaymentsData(res.data.data);
         }
       } catch (err) {
         console.error('خطأ في جلب البيانات:', err);
@@ -71,7 +60,7 @@ export default function PaymentsPage() {
       cell: (row) => (
         <div className="flex items-center gap-2">
           <span className="px-2 py-1 rounded-md bg-surface text-[10px] font-bold border border-border">
-            {row.methodType.toUpperCase()}
+            {(row.methodType || '').toUpperCase()}
           </span>
           <span className="text-text-secondary">{row.method}</span>
         </div>
@@ -99,7 +88,7 @@ export default function PaymentsPage() {
     { header: 'رقم العملية', accessor: 'trx', className: 'font-mono text-[11px] text-text-muted' },
     {
       header: 'إجراءات',
-      cell: (row) => (
+      cell: () => (
         <div className="flex items-center gap-2">
           <button className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors">
             <Eye className="w-3.5 h-3.5" />
@@ -121,28 +110,28 @@ export default function PaymentsPage() {
         <PaymentStatCard 
           title="إجمالي المدفوعات"
           value={stats.totalAmount}
-          changeText="+18%"
+          changeText=""
           icon={Wallet}
           theme="blue"
         />
         <PaymentStatCard 
           title="عملية ناجحة"
           value={stats.successCount}
-          changeText="+12%"
+          changeText=""
           icon={CheckCircle2}
           theme="green"
         />
         <PaymentStatCard 
           title="قيد المراجعة"
           value={stats.pendingCount}
-          changeText="+6%"
+          changeText=""
           icon={Clock}
           theme="orange"
         />
         <PaymentStatCard 
           title="مرفوضة"
           value={stats.failedCount}
-          changeText="-8%"
+          changeText=""
           isPositive={false}
           icon={XCircle}
           theme="red"
@@ -153,13 +142,13 @@ export default function PaymentsPage() {
       <PaymentsFilterBar filters={filters} setFilters={setFilters} />
 
       {/* 3. الجدول الريوزبول */}
-      <DataTable columns={columns} data={paymentsData} isLoading={isLoading} />
+      <DataTable columns={columns} data={paymentsData.slice((currentPage-1)*10,currentPage*10)} isLoading={isLoading} />
 
       {/* 4. شريط الترقيم والتنقل */}
       <Pagination 
         currentPage={currentPage}
-        totalPages={25}
-        totalItems={248}
+        totalPages={Math.max(1,Math.ceil(paymentsData.length/10))}
+        totalItems={paymentsData.length}
         itemsPerPage={10}
         onPageChange={(page) => setCurrentPage(page)}
       />

@@ -26,7 +26,7 @@ export const updateMyProfile = async (
       $set: updates,
     },
     {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     }
   )

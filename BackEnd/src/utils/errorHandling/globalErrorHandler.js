@@ -1,62 +1,10 @@
-const globalErrorHandler =
-  (error, req, res, next) => {
+export default function globalErrorHandler(error,req,res,next) {
+ if(res.headersSent) return next(error);
+ const expected=Number.isInteger(error.cause)&&error.cause>=400&&error.cause<600;
+ const status=error.code===11000?409:error.name==='ValidationError'||error.name==='CastError'?422:
+   error.code==='LIMIT_FILE_SIZE'?413:error.name==='MulterError'?400:expected?error.cause:500;
+ const message=status===500?'Internal server error':error.code===11000?'A record with these details already exists':error.message;
+ if(status>=500) console.error('Request failed',{method:req.method,path:req.path,status});
+ res.status(status).json({success:false,error:{code:status===503?'SERVICE_UNAVAILABLE':status===422?'VALIDATION_ERROR':'REQUEST_FAILED',message}});
+}
 
-    console.error(error);
-
-    const statusCode =
-      error.cause || 500;
-
-    let code =
-      "INTERNAL_SERVER_ERROR";
-
-    switch (statusCode) {
-
-      case 400:
-        code = "BAD_REQUEST";
-        break;
-
-      case 401:
-        code = "UNAUTHORIZED";
-        break;
-
-      case 403:
-        code = "FORBIDDEN";
-        break;
-
-      case 404:
-        code = "NOT_FOUND";
-        break;
-
-      case 409:
-        code = "CONFLICT";
-        break;
-
-      case 422:
-        code = "VALIDATION_ERROR";
-        break;
-
-      case 503:
-        code = "SERVICE_UNAVAILABLE";
-        break;
-
-    }
-
-    return res
-      .status(statusCode)
-      .json({
-
-        success: false,
-
-        error: {
-          code,
-
-          message:
-            error.message ||
-            "Something went wrong",
-        },
-
-      });
-
-  };
-
-export default globalErrorHandler;

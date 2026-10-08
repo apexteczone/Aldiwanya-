@@ -1,4 +1,3 @@
-import React from 'react';
 
 export const DataTable = ({ columns, data, isLoading }) => {
   if (isLoading) {

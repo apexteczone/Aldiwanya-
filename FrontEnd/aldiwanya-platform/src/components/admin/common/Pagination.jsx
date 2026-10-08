@@ -1,4 +1,3 @@
-import React from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 
 export const Pagination = ({ currentPage, totalPages, totalItems, itemsPerPage, onPageChange }) => {
@@ -8,12 +7,12 @@ export const Pagination = ({ currentPage, totalPages, totalItems, itemsPerPage, 
       {/* تحديد عدد العناصر */}
       <div className="flex items-center gap-2">
         <span>عرض</span>
-        <select className="bg-surface border border-border text-text-primary rounded-lg px-2 py-1 focus:outline-none">
+        <select value={itemsPerPage || 10} disabled className="bg-surface border border-border text-text-primary rounded-lg px-2 py-1 focus:outline-none">
           <option value="10">10</option>
           <option value="25">25</option>
           <option value="50">50</option>
         </select>
-        <span>من {totalItems} عملية دفع</span>
+        <span>من {totalItems} عنصر</span>
       </div>
 
       {/* أزرار التنقل */}
@@ -26,7 +25,7 @@ export const Pagination = ({ currentPage, totalPages, totalItems, itemsPerPage, 
           <ChevronLeft className="w-4 h-4" />
         </button>
 
-        {[1, 2, 3, 4, 5, '...', totalPages].map((page, i) => (
+        {Array.from({length:Math.max(1,totalPages)},(_,i)=>i+1).map((page, i) => (
           <button
             key={i}
             onClick={() => typeof page === 'number' && onPageChange(page)}

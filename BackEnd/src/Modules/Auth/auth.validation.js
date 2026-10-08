@@ -12,7 +12,7 @@ export const userRegisterSchema =
 
     email: joi
       .string()
-      .email()
+      .trim().lowercase().email()
       .required(),
 
     phoneNumber: joi
@@ -27,7 +27,7 @@ export const userRegisterSchema =
     password: joi
       .string()
       .min(12)
-      .max(128)
+      .max(72)
       .required(),
 
     confirmPassword: joi
@@ -76,7 +76,7 @@ export const forgotPasswordSchema =
 
     email: joi
       .string()
-      .email()
+      .trim().lowercase().email()
       .required(),
 
   });
@@ -92,7 +92,7 @@ export const resetPasswordSchema =
     newPassword: joi
       .string()
       .min(12)
-      .max(128)
+      .max(72)
       .required(),
 
     confirmPassword: joi

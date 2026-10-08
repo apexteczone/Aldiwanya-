@@ -224,9 +224,8 @@ export const reorderLessons = async (
 
     const lessons =
       await lessonService.reorderLessons(
-        courseId,
-        ids
-      );
+        courseId, ids, req.body.moduleId
+    );
 
     return res.status(200).json({
       success: true,

@@ -1,5 +1,14 @@
-import connectDB from './DB/connection.js';
+import mongoose from 'mongoose';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {existsSync} from 'node:fs';
 import cors from 'cors';
+import helmet from 'helmet';
+import {rateLimit} from 'express-rate-limit';
+import connectDB from './DB/connection.js';
+import {validateConfig} from './config.js';
+import authentication,{allowTo} from './middlewares/authMiddleware.js';
+import {uploadRoot} from './middlewares/upload.middleware.js';
 import authRouter from './Modules/Auth/authController.js';
 import gradeRouter from './Modules/Grade/grade.route.js';
 import courseRouter from './Modules/Course/course.route.js';
@@ -9,25 +18,49 @@ import moduleRouter from './Modules/Module/module.controller.js';
 import planRouter from './Modules/Plan/Plan.controller.js';
 import userRouter from './Modules/User/user.route.js';
 import contentRouter from './Modules/Content/content.controller.js';
-import notFoundHandler from './utils/errorHandling/NotFoundHandler.js';
+import libraryRouter from './Modules/Content/library.router.js';
+import paymentRouter from './Modules/Payment/paymentController.js';
+import adminRouter from './Modules/Admin/adminController.js';
 import globalErrorHandler from './utils/errorHandling/globalErrorHandler.js';
+export default async function bootstrap(app,express,{connect=true}={}) {
+ const {origins}=validateConfig();
+ if(connect) await connectDB();
+ app.disable('x-powered-by');
+ if(process.env.TRUST_PROXY_HOPS) app.set('trust proxy',Number(process.env.TRUST_PROXY_HOPS));
+ app.use(helmet({crossOriginResourcePolicy:{policy:'same-site'}}));
+ app.use(cors({origin:(origin,cb)=>cb(origin&&!origins.includes(origin)?new Error('Origin not allowed',{cause:403}):null,true)}));
+ app.use(express.json({limit:'128kb'}));
+ app.use(express.urlencoded({extended:false,limit:'128kb'}));
+ app.get('/health',(req,res)=>res.status(mongoose.connection.readyState===1?200:503).json({ok:mongoose.connection.readyState===1}));
+ app.use('/uploads/images',express.static(path.join(uploadRoot,'images'),{dotfiles:'deny',index:false,setHeaders:res=>res.setHeader('X-Content-Type-Options','nosniff')}));
+ const api=express.Router();
+ const authLimit=rateLimit({windowMs:15*60*1000,limit:100,standardHeaders:'draft-8',legacyHeaders:false});
+ api.use('/auth',authLimit,authRouter);
+ api.use('/user',userRouter);
+ api.use('/plan',planRouter);
+ api.use('/payments',paymentRouter);
+ api.use('/library',libraryRouter);
+ const admin=express.Router();
+ admin.use(authentication(),allowTo(['Admin']));
+ admin.use('/grades',gradeRouter);
+ admin.use('/courses',courseRouter);
+ admin.use('/lessons',lessonRouter);
+ admin.use('/pdfs',pdfRouter);
+ admin.use(moduleRouter);
+ admin.use(adminRouter);
+ api.use('/admin',admin);
+ api.use(contentRouter);
+ app.use('/api/v1',api);
+ const serveFrontend=process.env.SERVE_FRONTEND==='true';
+ app.use('/',(req,res,next)=>serveFrontend&&req.method==='GET'&&req.get('accept')?.includes('text/html')?next():api(req,res,next));
+ if(serveFrontend) {
+  const frontend=fileURLToPath(new URL('../../FrontEnd/aldiwanya-platform/dist/',import.meta.url));
+  if(!existsSync(path.join(frontend,'index.html'))) throw new Error('Build the frontend before starting with SERVE_FRONTEND=true');
+  app.use(express.static(frontend,{index:false,dotfiles:'deny'}));
+  app.use((req,res,next)=>req.method==='GET'&&!req.path.startsWith('/api/')&&req.get('accept')?.includes('text/html')?res.sendFile(path.join(frontend,'index.html')):next());
+ }
+ app.use((req,res)=>res.status(404).json({success:false,error:{message:'Route not found'}}));
+ app.use(globalErrorHandler);
+}
 
-const bootstrap = async (app, express) => {
-  await connectDB();
-  app.use(cors());
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  app.get('/', (req, res) => res.json({ service: 'Aldiwanya API' }));
-  app.use('/auth', authRouter);
-  app.use('/admin/grades', gradeRouter);
-  app.use('/admin/courses', courseRouter);
-  app.use('/admin/lessons', lessonRouter);
-  app.use('/admin/pdfs', pdfRouter);
-  app.use('/admin', moduleRouter);
-  app.use('/plan', planRouter);
-  app.use('/user', userRouter);
-  app.use('/', contentRouter);
-  app.all('/{*splat}', notFoundHandler);
-  app.use(globalErrorHandler);
-};
-export default bootstrap;
+

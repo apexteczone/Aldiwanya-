@@ -1,4 +1,3 @@
-import React from 'react';
 
 export const StatCard = ({ icon: Icon, title, value, changeText, isPositive = true, iconBgColor, iconColor }) => {
   return (

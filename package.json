@@ -1,11 +1,15 @@
 {
-  "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "joi": "^18.2.9",
-    "jsonwebtoken": "^9.0.3",
-    "nodemailer": "^10.0.13"
+  "name": "aldiwanya",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=24 <25"
   },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
+  "scripts": {
+    "install:all": "npm ci --prefix BackEnd && npm ci --prefix FrontEnd/aldiwanya-platform",
+    "build": "npm run build --prefix FrontEnd/aldiwanya-platform",
+    "lint": "npm run lint --prefix FrontEnd/aldiwanya-platform",
+    "test": "npm test --prefix BackEnd",
+    "start": "npm start --prefix BackEnd"
   }
 }

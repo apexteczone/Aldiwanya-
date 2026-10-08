@@ -22,6 +22,7 @@ export const generateToken = ({
 
     {
       expiresIn,
+      algorithm: "HS256",
     }
   );
 };

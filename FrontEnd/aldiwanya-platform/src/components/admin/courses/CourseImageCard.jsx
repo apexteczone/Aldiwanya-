@@ -1,4 +1,3 @@
-import React from 'react';
 import { Image, RefreshCw, Trash2, UploadCloud } from 'lucide-react';
 
 export function CourseImageCard({ imagePreview, onImageChange, onClearImage }) {

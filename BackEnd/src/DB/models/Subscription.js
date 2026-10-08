@@ -18,7 +18,7 @@ const subscriptionPeriodSchema =
 
       paymentOrderId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "PaymentOrder",
+        ref: "Payment",
         required: true,
         unique: true,
       },

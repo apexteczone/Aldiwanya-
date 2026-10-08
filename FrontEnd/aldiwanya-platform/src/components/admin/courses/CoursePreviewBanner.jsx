@@ -1,5 +1,4 @@
 // src/components/admin/courses/CoursePreviewBanner.jsx
-import React from 'react';
 import {  ArrowRight } from 'lucide-react';
 
 export function CoursePreviewBanner({ onSubmit, isSubmitting }) {

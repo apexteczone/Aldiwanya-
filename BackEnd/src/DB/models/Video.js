@@ -17,6 +17,8 @@ const videoSchema = new mongoose.Schema(
       maxlength: 200,
     },
 
+    videoUrl: {type:String, default:null},
+    thumbnailUrl: {type:String, default:null},
     provider: {
       type: String,
       default: null,

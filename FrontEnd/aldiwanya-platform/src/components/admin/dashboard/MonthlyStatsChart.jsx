@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -11,14 +10,7 @@ import {
 
 export const MonthlyStatsChart = ({ data }) => {
   // بيانات افتراضية بأسماء الأشهر والقيم المطابقة للتصميم
-  const defaultData = [
-    { month: 'مارس', payments: 30, subscriptions: 40 },
-    { month: 'أبريل', payments: 50, subscriptions: 90 },
-    { month: 'مايو', payments: 65, subscriptions: 100 },
-    { month: 'يونيو', payments: 45, subscriptions: 60 },
-    { month: 'يوليو', payments: 132, subscriptions: 80 },
-    { month: 'أغسطس', payments: 160, subscriptions: 170 },
-  ];
+  const defaultData = [];
 
   const chartData = data || defaultData;
 
@@ -41,7 +33,7 @@ export const MonthlyStatsChart = ({ data }) => {
           <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> الاشتراكات الجديدة
         </span>
         <span className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-blue-300" /> المدفوعات (EGP)
+          <span className="w-2.5 h-2.5 rounded-full bg-blue-300" /> المدفوعات (KWD)
         </span>
       </div>
 
@@ -90,3 +82,4 @@ export const MonthlyStatsChart = ({ data }) => {
     </div>
   );
 };
+

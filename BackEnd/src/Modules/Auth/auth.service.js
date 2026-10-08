@@ -3,7 +3,7 @@ import { hash , compare} from "../../utils/hashing/hashing.js";
 import PasswordResetTokenModel from "../../DB/models/PasswordResetToken.js"
 import crypto from "crypto";
 import {generateToken} from "../../utils/token/token.js";
-import { sendPasswordResetEmail } from "../../utils/email/email.js";
+import { sendPasswordResetEmail } from "../../utils/Email/email.js";
 
 
 
@@ -283,7 +283,7 @@ export const logout =
         },
 
         {
-          new: true,
+          returnDocument: 'after',
         }
 
       );
@@ -409,7 +409,7 @@ export const forgotPassword =
 
 
     const resetUrl =
-      `${process.env.FRONTEND_URL}` +
+      `${process.env.FRONTEND_URL.split(',')[0].trim()}` +
       `/reset-password?token=${rawToken}`;
 
 
@@ -425,13 +425,13 @@ export const forgotPassword =
 
 } catch (error) {
 
-  console.error("========== EMAIL ERROR ==========");
-  console.error("message:", error.message);
-  console.error("code:", error.code);
-  console.error("response:", error.response);
-  console.error("responseCode:", error.responseCode);
-  console.error("command:", error.command);
-  console.error("================================");
+  
+  
+  
+  
+  
+  
+  
 
   return next(
     new Error(
@@ -483,7 +483,7 @@ export const resetPassword = async (req, res, next) => {
       },
     },
     {
-      new: true,
+      returnDocument: 'after',
     }
   );
 

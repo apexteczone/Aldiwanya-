@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../../services/api';
 import { 
   FileText, 
   Download, 
@@ -35,129 +35,24 @@ export default function PdfManagementPage() {
   const [selectedStatus, setSelectedStatus] = useState('');
 
   // 1. الإحصائيات العلوية الاربعة المطابقة للتصميم بالضبط
-  const [stats] = useState({
-    totalViews: '8,630',
-    totalViewsChange: '+ 14%',
-    beneficiaries: '1,248',
-    beneficiariesChange: '+ 12%',
-    totalFiles: '312',
-    totalFilesChange: '+ 26',
-    totalDownloads: '12,540',
-    totalDownloadsChange: '+ 18%',
-  });
+  
 
   // 2. داتا جدول ملفات الـ PDF المطابقة للصورة
-  const [pdfData, setPdfData] = useState([
-    {
-      id: 1,
-      fileName: 'مذكرة الوحدة الأولى',
-      subject: 'الرياضيات',
-      grade: 'العاشر',
-      type: 'مذكرة',
-      fileSize: '2.4 MB',
-      downloadsCount: '1,245',
-      uploadDate: '2025-08-30',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=100&q=80'
-    },
-    {
-      id: 2,
-      fileName: 'أوراق عمل الفصل الأول',
-      subject: 'الرياضيات',
-      grade: 'العاشر',
-      type: 'أوراق عمل',
-      fileSize: '1.8 MB',
-      downloadsCount: '980',
-      uploadDate: '2025-08-28',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=100&q=80'
-    },
-    {
-      id: 3,
-      fileName: 'مراجعة على الاختبار الأول',
-      subject: 'الرياضيات',
-      grade: 'العاشر',
-      type: 'مراجعة',
-      fileSize: '3.2 MB',
-      downloadsCount: '1,560',
-      uploadDate: '2025-08-25',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=100&q=80'
-    },
-    {
-      id: 4,
-      fileName: 'أسئلة سنوات سابقة',
-      subject: 'الرياضيات',
-      grade: 'العاشر',
-      type: 'امتحانات',
-      fileSize: '5.1 MB',
-      downloadsCount: '2,340',
-      uploadDate: '2025-08-20',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=100&q=80'
-    },
-    {
-      id: 5,
-      fileName: 'ملخص القوانين الهامة',
-      subject: 'الرياضيات',
-      grade: 'العاشر',
-      type: 'ملخص',
-      fileSize: '1.2 MB',
-      downloadsCount: '860',
-      uploadDate: '2025-08-18',
-      status: 'pending',
-      thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=100&q=80'
-    },
-    {
-      id: 6,
-      fileName: 'مذكرة الهندسة التحليلية',
-      subject: 'الرياضيات',
-      grade: 'الحادي عشر',
-      type: 'مذكرة',
-      fileSize: '4.6 MB',
-      downloadsCount: '1,920',
-      uploadDate: '2025-08-15',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=100&q=80'
-    },
-    {
-      id: 7,
-      fileName: 'أوراق عمل المتتاليات',
-      subject: 'الرياضيات',
-      grade: 'الحادي عشر',
-      type: 'أوراق عمل',
-      fileSize: '2.1 MB',
-      downloadsCount: '780',
-      uploadDate: '2025-08-10',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=100&q=80'
-    },
-    {
-      id: 8,
-      fileName: 'مراجعة نهائية',
-      subject: 'الرياضيات',
-      grade: 'الثاني عشر',
-      type: 'مراجعة',
-      fileSize: '3.8 MB',
-      downloadsCount: '1,640',
-      uploadDate: '2025-08-05',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=100&q=80'
-    },
-  ]);
+  const [pdfData, setPdfData] = useState([]);
+  const stats = {totalViews:'—',totalViewsChange:'',beneficiaries:'—',beneficiariesChange:'',totalFiles:pdfData.length,totalFilesChange:'',totalDownloads:'—',totalDownloadsChange:''};
 
   // جلب داتا الـ PDF من الباك إند عبر Axios
   useEffect(() => {
     const fetchPdfs = async () => {
       setIsLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('/api/v1/admin/pdfs', {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const res = await axios.get('/admin/pdfs', {
           headers: { Authorization: `Bearer ${token}` },
           params: { page: currentPage, search: searchQuery }
         });
         if (res.data) {
-          // setPdfData(res.data.data);
+          setPdfData(res.data.data.map(p=>({...p,id:p._id,subject:p.course?.title||'',level:'',type:'مذكرة',date:p.createdAt?.slice(0,10),size:'PDF',downloads:0})));
         }
       } catch (err) {
         console.error('خطأ في جلب بيانات الملفات:', err);
@@ -172,8 +67,8 @@ export default function PdfManagementPage() {
   const handleDeletePdf = async (id) => {
     if (window.confirm('هل أنت تأكد من حذف هذا الملف؟')) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`/api/v1/admin/pdfs/${id}`, {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        await axios.delete(`/admin/pdfs/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setPdfData(prev => prev.filter(pdf => pdf.id !== id));
@@ -396,13 +291,13 @@ export default function PdfManagementPage() {
       </div>
 
       {/* 3. جدول داتا الـ PDF */}
-      <DataTable columns={columns} data={pdfData} isLoading={isLoading} />
+      <DataTable columns={columns} data={pdfData.slice((currentPage-1)*10,currentPage*10)} isLoading={isLoading} />
 
       {/* 4. الباجينيشن الشامل */}
       <Pagination 
         currentPage={currentPage}
-        totalPages={10}
-        totalItems={312}
+        totalPages={Math.max(1,Math.ceil(pdfData.length/10))}
+        totalItems={pdfData.length}
         itemsPerPage={10}
         onPageChange={(page) => setCurrentPage(page)}
       />
@@ -410,3 +305,6 @@ export default function PdfManagementPage() {
     </div>
   );
 }
+
+
+

@@ -11,6 +11,7 @@ import { hash } from "../utils/hashing/hashing.js";
 
 const seedAdmin = async () => {
   try {
+    if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD || Buffer.byteLength(process.env.ADMIN_PASSWORD)<12 || !process.env.ADMIN_PHONE) throw new Error("Explicit valid admin environment values required");
     await connectDB();
 
     const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
@@ -24,7 +25,7 @@ const seedAdmin = async () => {
     if (existingAdmin) {
       console.log("=========================================");
       console.log("Admin account already exists in DB!");
-      console.log(`Identifier: ${adminEmail}`);
+      
       console.log("=========================================");
       process.exit(0);
     }
@@ -44,8 +45,8 @@ const seedAdmin = async () => {
 
     console.log("=========================================");
     console.log("Admin Created Successfully from .env!");
-    console.log(`Email: ${adminEmail}`);
-    console.log(`Phone: ${adminPhone}`);
+    
+    
     console.log("=========================================");
 
     process.exit(0);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../../services/api';
 import { Users, Crown, BookOpen, FileText, ArrowLeft } from 'lucide-react';
 import { StatCard } from '../../components/admin/dashboard/StatCard';
 import { WelcomeBanner } from '../../components/admin/dashboard/WelcomeBanner';
@@ -10,37 +10,27 @@ import { SubscriptionsPieChart } from '../../components/admin/dashboard/Subscrip
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
-    freePdfs: { count: 312, newCount: 26 },
-    totalCourses: { count: 24, newCount: 4 },
-    activeSubscriptions: { count: 856, percent: 18 },
-    registeredStudents: { count: 1248, percent: 12 },
+    freePdfs: { count: 0, newCount: 0 },
+    totalCourses: { count: 0, newCount: 0 },
+    activeSubscriptions: { count: 0, percent: 0 },
+    registeredStudents: { count: 0, percent: 0 },
   });
 
-  const [recentSubscriptions, setRecentSubscriptions] = useState([
-    { id: '#1284', name: 'عبدالله خالد', plan: 'سنوي', amount: '250 EGP', date: '2025-08-30', status: 'نشط' },
-    { id: '#1283', name: 'سارة محمود', plan: 'شهري', amount: '100 EGP', date: '2025-08-30', status: 'نشط' },
-    { id: '#1282', name: 'محمد أحمد', plan: 'ربع سنوي', amount: '150 EGP', date: '2025-08-29', status: 'نشط' },
-    { id: '#1281', name: 'منى علي', plan: 'شهري', amount: '100 EGP', date: '2025-08-29', status: 'منتهي' },
-    { id: '#1280', name: 'يوسف خالد', plan: 'سنوي', amount: '250 EGP', date: '2025-08-28', status: 'نشط' },
-  ]);
+  const [recentSubscriptions, setRecentSubscriptions] = useState([]);
 
-  const [recentStudents, setRecentStudents] = useState([
-    { id: '#1288', name: 'فاطمة أحمد', date: '2025-08-30' },
-    { id: '#1287', name: 'علي محمود', date: '2025-08-30' },
-    { id: '#1286', name: 'نور العمري', date: '2025-08-29' },
-    { id: '#1285', name: 'خالد وليد', date: '2025-08-29' },
-    { id: '#1284', name: 'عبدالله خالد', date: '2025-08-28' },
-  ]);
+  const [recentStudents, setRecentStudents] = useState([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('/api/v1/admin/dashboard-stats', {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const res = await axios.get('/admin/dashboard-stats', {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data) {
-          // setStats(res.data.stats);
+          setStats(res.data.data.stats);
+          setRecentStudents(res.data.data.recentStudents);
+          setRecentSubscriptions(res.data.data.recentSubscriptions);
         }
       } catch (err) {
         console.error('خطأ في جلب بيانات الصفحة الرئيسية:', err);
@@ -182,3 +172,4 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+

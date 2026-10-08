@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../../services/api';
 import { 
   FileText, 
   UploadCloud, 
@@ -35,12 +35,12 @@ export default function UploadPdfPage() {
   useEffect(() => {
     const fetchDatabaseData = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         const headers = { Authorization: `Bearer ${token}` };
 
         const [gradesRes, coursesRes] = await Promise.allSettled([
-          axios.get('/api/v1/admin/grades', { headers }),
-          axios.get('/api/v1/admin/courses', { headers })
+          axios.get('/admin/grades', { headers }),
+          axios.get('/admin/courses', { headers })
         ]);
 
         if (gradesRes.status === 'fulfilled' && gradesRes.value?.data) {
@@ -95,17 +95,17 @@ export default function UploadPdfPage() {
     setUploadProgress(10);
 
     const dataPayload = new FormData();
-    dataPayload.append('pdfFile', selectedFile);
+    dataPayload.append('file', selectedFile);
     dataPayload.append('title', formData.title);
     dataPayload.append('gradeId', formData.gradeId);
-    dataPayload.append('courseId', formData.courseId);
+    dataPayload.append('course', formData.courseId);
     dataPayload.append('type', formData.type);
     dataPayload.append('status', formData.status);
     dataPayload.append('description', formData.description);
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('/api/v1/admin/pdfs', dataPayload, {
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      await axios.post('/admin/pdfs', dataPayload, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -344,3 +344,4 @@ export default function UploadPdfPage() {
     </div>
   );
 }
+

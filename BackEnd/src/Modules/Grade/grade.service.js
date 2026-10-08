@@ -7,7 +7,7 @@ export const createGrade = async (data) => {
   const existingGrade = await GradeModel.findOne({ name });
 
   if (existingGrade) {
-    throw new Error("Grade already exists");
+    throw new Error("Grade already exists", {cause:409});
   }
 
   return await GradeModel.create({
@@ -27,7 +27,7 @@ export const getGradeById = async (gradeId) => {
   const grade = await GradeModel.findById(gradeId);
 
   if (!grade) {
-    throw new Error("Grade not found");
+    throw new Error("Grade not found", {cause:404});
   }
 
   return grade;
@@ -37,7 +37,7 @@ export const updateGrade = async (gradeId, data) => {
   const grade = await GradeModel.findById(gradeId);
 
   if (!grade) {
-    throw new Error("Grade not found");
+    throw new Error("Grade not found", {cause:404});
   }
 
   if (data.name && data.name !== grade.name) {
@@ -47,7 +47,7 @@ export const updateGrade = async (gradeId, data) => {
     });
 
     if (existingGrade) {
-      throw new Error("Grade already exists");
+      throw new Error("Grade already exists", {cause:409});
     }
   }
 
@@ -60,7 +60,7 @@ export const deleteGrade = async (gradeId) => {
   const grade = await GradeModel.findById(gradeId);
 
   if (!grade) {
-    throw new Error("Grade not found");
+    throw new Error("Grade not found", {cause:404});
   }
 
   const coursesCount = await CourseModel.countDocuments({
@@ -69,7 +69,7 @@ export const deleteGrade = async (gradeId) => {
 
   if (coursesCount > 0) {
     throw new Error(
-      "Cannot delete grade because it has courses"
+      "Cannot delete grade because it has courses", {cause:409}
     );
   }
 

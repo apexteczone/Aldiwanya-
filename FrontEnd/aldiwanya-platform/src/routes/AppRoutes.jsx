@@ -1,25 +1,31 @@
+import {lazy,Suspense} from 'react';
 // import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import StudentApp from '../pages/dashboard/StudentApp';
+import PasswordPage from '../pages/auth/PasswordPage';
+import CourseDetailsPage from '../pages/courses/CourseDetailsPage';
+import AdminGuard from '../components/common/AdminGuard';
+const LessonsManagementPage=lazy(()=>import('../pages/admin/LessonsManagementPage'));
+const PlansManagementPage=lazy(()=>import('../pages/admin/PlansManagementPage'));
 import { AdminLayout } from '../layouts/AdminLayout';
-import GradesManager from '../pages/admin/GradesManager';
-import AddGrade from '../pages/admin/AddGrade';
-import AdminDashboardPage from '../pages/admin/AdminDashboardPage';
-import PaymentsPage from '../pages/admin/PaymentsPage';
-import SubscriptionsPage from '../pages/admin/SubscriptionsPage';
-import StudentsPage from '../pages/admin/StudentsPage';
-import VideosManagementPage from '../pages/admin/VideosManagementPage';
-import UploadVideoPage from '../pages/admin/UploadVideoPage';
-import PdfManagementPage from '../pages/admin/PdfManagementPage'
-import UploadPdfPage from '../pages/admin/UploadPdfPage';
-import CoursesManagementPage from '../pages/admin/CoursesManagementPage';
-import CreateCoursePage from '../pages/admin/CreateCoursePage';
+const GradesManager=lazy(()=>import('../pages/admin/GradesManager'));
+const AddGrade=lazy(()=>import('../pages/admin/AddGrade'));
+const AdminDashboardPage=lazy(()=>import('../pages/admin/AdminDashboardPage'));
+const PaymentsPage=lazy(()=>import('../pages/admin/PaymentsPage'));
+const SubscriptionsPage=lazy(()=>import('../pages/admin/SubscriptionsPage'));
+const StudentsPage=lazy(()=>import('../pages/admin/StudentsPage'));
+const VideosManagementPage=lazy(()=>import('../pages/admin/VideosManagementPage'));
+const UploadVideoPage=lazy(()=>import('../pages/admin/UploadVideoPage'));
+const PdfManagementPage=lazy(()=>import('../pages/admin/PdfManagementPage'));
+const UploadPdfPage=lazy(()=>import('../pages/admin/UploadPdfPage'));
+const CoursesManagementPage=lazy(()=>import('../pages/admin/CoursesManagementPage'));
+const CreateCoursePage=lazy(()=>import('../pages/admin/CreateCoursePage'));
 
 // الصفحات الفرعية والجانبية
 // const CoursesManagementPage = () => <div className="p-4 bg-white rounded-2xl border border-border">إدارة الكورسات</div>;
 // const PdfManagementPage = () => <div className="p-4 bg-white rounded-2xl border border-border">إدارة ملفات PDF</div>;
 // const ReportsPage = () => <div className="p-4 bg-white rounded-2xl border border-border">التقارير والإحصائيات</div>;
 const SettingsPage = () => <div className="p-4 bg-white rounded-2xl border border-border">إعدادات المنصة</div>;
-const LoginPage = () => <div className="p-4 bg-white rounded-2xl border border-border">صفحة تسجيل الدخول</div>;
 const NotFoundPage = () => (
   <div className="p-12 text-center space-y-3">
     <h1 className="text-4xl font-extrabold text-navy-950">404</h1>
@@ -33,15 +39,15 @@ export default function AppRoutes() {
   };
 
   return (
-    <Routes>
+    <Suspense fallback={<p role="status">جاري التحميل…</p>}><Routes>
       {/* صفحة تسجيل الدخول */}
-      <Route path="/auth/login" element={<LoginPage />} />
+      <Route path="/auth/login" element={<StudentApp />} />
 
       
       <Route
         path="/admin/*"
         element={
-          <AdminLayout onSearch={handleGlobalSearch}>
+          <AdminGuard><AdminLayout onSearch={handleGlobalSearch}>
             <Routes>
               <Route path="/" element={<Navigate to="dashboard" replace />} />
               
@@ -49,11 +55,14 @@ export default function AppRoutes() {
               <Route path="dashboard" element={<AdminDashboardPage />} />
               
               
+              <Route path="lessons" element={<LessonsManagementPage />} />
+              <Route path="plans" element={<PlansManagementPage />} />
               <Route path="video" element={<VideosManagementPage />} />
               <Route path="upload" element={<UploadVideoPage />} />
               
               
               <Route path="courses" element={<CoursesManagementPage />} />
+              <Route path="courses/edit/:id" element={<CreateCoursePage/>}/>
               <Route path="courses/new" element={<CreateCoursePage/>}/>
               <Route path="pdfs" element={<PdfManagementPage/>} />
               <Route path="pdfs/new" element={<UploadPdfPage />} />
@@ -71,13 +80,19 @@ export default function AppRoutes() {
               {/* 404 */}
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
-          </AdminLayout>
+          </AdminLayout></AdminGuard>
         }
       />
 
       {/* إعادة التوجيه الافتراضية للتطبيق */}
-      <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+      <Route path="/" element={<StudentApp />} />
+      <Route path="/login" element={<StudentApp />} />
+      <Route path="/register" element={<StudentApp />} />
+      <Route path="/dashboard" element={<StudentApp />} />
+      <Route path="/forgot-password" element={<PasswordPage />} />
+      <Route path="/reset-password" element={<PasswordPage reset />} />
+      <Route path="/courses/:id" element={<CourseDetailsPage />} />
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+    </Routes></Suspense>
   );
 }

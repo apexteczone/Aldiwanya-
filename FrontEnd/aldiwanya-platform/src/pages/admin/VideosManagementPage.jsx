@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect } from 'react';
+import axios from '../../services/api';
 import { Video, UploadCloud, CheckCircle2, PauseCircle, Play, BarChart2, Edit3, Trash2 } from 'lucide-react';
 import { PaymentStatCard } from '../../components/admin/payments/PaymentStatCard';
 import { VideosActionHeader } from '../../components/admin/video/VideosActionHeader';
@@ -12,109 +12,24 @@ export default function VideosManagementPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // 1. الإحصائيات العلوية
-  const [stats] = useState({
-    totalVideos: '456',
-    uploadingCount: '28',
-    activeCount: '420',
-    inactiveCount: '24',
-  });
+  
 
   // 2. البيانات المطابقة للتصميم
-  const [videosData, setVideosData] = useState([
-    {
-      id: 1,
-      title: 'مفهوم المتغيرات في الجبر',
-      lesson: 'مقدمة في الجبر',
-      course: 'الرياضيات',
-      duration: '12:45',
-      uploadDate: '2025-08-30',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=300&q=80'
-    },
-    {
-      id: 2,
-      title: 'حل المعادلات من الدرجة الأولى',
-      lesson: 'المعادلات البسيطة',
-      course: 'الرياضيات',
-      duration: '15:20',
-      uploadDate: '2025-08-28',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=300&q=80'
-    },
-    {
-      id: 3,
-      title: 'التحليل إلى العوامل',
-      lesson: 'العوامل والتحليل',
-      course: 'الرياضيات',
-      duration: '18:30',
-      uploadDate: '2025-08-25',
-      status: 'review',
-      thumbnail: 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=300&q=80'
-    },
-    {
-      id: 4,
-      title: 'قوانين الأسس',
-      lesson: 'الأسس والجذور',
-      course: 'الرياضيات',
-      duration: '10:30',
-      uploadDate: '2025-08-20',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=300&q=80'
-    },
-    {
-      id: 5,
-      title: 'مقدمة في الدوال',
-      lesson: 'الدوال',
-      course: 'الرياضيات',
-      duration: '22:10',
-      uploadDate: '2025-08-18',
-      status: 'inactive',
-      thumbnail: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=300&q=80'
-    },
-    {
-      id: 6,
-      title: 'المستوى الإحداثي',
-      lesson: 'الهندسة التحليلية',
-      course: 'الرياضيات',
-      duration: '16:40',
-      uploadDate: '2025-08-15',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=300&q=80'
-    },
-    {
-      id: 7,
-      title: 'حل المتباينات البسيطة',
-      lesson: 'المتباينات',
-      course: 'الرياضيات',
-      duration: '11:30',
-      uploadDate: '2025-08-10',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=300&q=80'
-    },
-    {
-      id: 8,
-      title: 'مقدمة في الإحصاء',
-      lesson: 'الإحصاء',
-      course: 'الرياضيات',
-      duration: '11:30',
-      uploadDate: '2025-08-05',
-      status: 'active',
-      thumbnail: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=300&q=80'
-    },
-  ]);
+  const [videosData, setVideosData] = useState([]);
+  const stats = {totalVideos:videosData.length,uploadingCount:videosData.filter(v=>v.processingStatus==='processing').length,activeCount:videosData.filter(v=>v.status==='active').length,inactiveCount:videosData.filter(v=>v.status!=='active').length};
 
   // طلب البيانات عبر Axios
   useEffect(() => {
     const fetchVideos = async () => {
       setIsLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('/api/v1/admin/videos', {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const res = await axios.get('/admin/videos', {
           headers: { Authorization: `Bearer ${token}` },
           params: { page: currentPage }
         });
         if (res.data) {
-          // setVideosData(res.data.data);
+          setVideosData(res.data.data);
         }
       } catch (err) {
         console.error('خطأ أثناء جلب قائمة الفيديوهات:', err);
@@ -146,8 +61,8 @@ export default function VideosManagementPage() {
   const handleDeleteVideo = async (id) => {
     if (window.confirm('هل أنت تأكد من حذف هذا الفيديو؟')) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`/api/v1/admin/videos/${id}`, {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        await axios.delete(`/admin/videos/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setVideosData(prev => prev.filter(video => video.id !== id));
@@ -261,28 +176,28 @@ export default function VideosManagementPage() {
         <PaymentStatCard 
           title="إجمالي الفيديوهات"
           value={stats.totalVideos}
-          changeText="+24"
+          changeText=""
           icon={Video}
           theme="purple"
         />
         <PaymentStatCard 
           title="جاري الرفع"
           value={stats.uploadingCount}
-          changeText="+6"
+          changeText=""
           icon={UploadCloud}
           theme="blue"
         />
         <PaymentStatCard 
           title="مفعل"
           value={stats.activeCount}
-          changeText="+18"
+          changeText=""
           icon={CheckCircle2}
           theme="green"
         />
         <PaymentStatCard 
           title="غير مفعل"
           value={stats.inactiveCount}
-          changeText="-3"
+          changeText=""
           isPositive={false}
           icon={PauseCircle}
           theme="red"
@@ -293,13 +208,13 @@ export default function VideosManagementPage() {
       <VideosActionHeader />
 
       {/* 3. الجدول الريوزبول */}
-      <DataTable columns={columns} data={videosData} isLoading={isLoading} />
+      <DataTable columns={columns} data={videosData.slice((currentPage-1)*10,currentPage*10)} isLoading={isLoading} />
 
       {/* 4. الترقيم والتصفح */}
       <Pagination 
         currentPage={currentPage}
-        totalPages={10}
-        totalItems={8}
+        totalPages={Math.max(1,Math.ceil(videosData.length/10))}
+        totalItems={videosData.length}
         itemsPerPage={10}
         onPageChange={(page) => setCurrentPage(page)}
       />
@@ -307,3 +222,5 @@ export default function VideosManagementPage() {
     </div>
   );
 }
+
+

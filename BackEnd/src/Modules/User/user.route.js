@@ -22,14 +22,14 @@ const router = Router();
 router.get(
   "/me",
   authentication(),
-  allowTo(["Student"]),
+  allowTo(["Student", "Admin"]),
   asyncHandler(getMyProfile)
 );
 
 router.patch(
   "/me",
   authentication(),
-  allowTo(["Student"]),
+  allowTo(["Student", "Admin"]),
   validation(updateMyProfileSchema),
   asyncHandler(updateMyProfile)
 );

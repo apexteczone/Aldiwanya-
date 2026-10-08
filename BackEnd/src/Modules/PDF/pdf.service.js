@@ -1,151 +1,40 @@
-import mongoose from "mongoose";
-import fs from "fs";
-import path from "path";
-
-import PDFModel from "../../DB/models/PDF.js"; 
-import CourseModel from "../../DB/models/Course.js";
-import LessonModel from "../../DB/models/Lesson.js";
-
-const checkId = (id, name) => {
-  if (!mongoose.isValidObjectId(id)) {
-    throw new Error(`Invalid ${name}`, {
-      cause: 422,
-    });
-  }
-};
-
-
-const deleteLocalFile = (filePath) => {
-  if (filePath && fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
-  }
-};
-
-// CREATE PDF
-export const createPdf = async (data, file) => {
-  if (!file) {
-    throw new Error("PDF file is required", { cause: 400 });
-  }
-
-  const { course, lesson } = data;
-
-  checkId(course, "course ID");
-  const courseExists = await CourseModel.findById(course);
-  if (!courseExists) {
-    deleteLocalFile(file.path);
-    throw new Error("Course not found", { cause: 404 });
-  }
-
-  if (lesson) {
-    checkId(lesson, "lesson ID");
-    const lessonExists = await LessonModel.findById(lesson);
-    if (!lessonExists) {
-      deleteLocalFile(file.path);
-      throw new Error("Lesson not found", { cause: 404 });
-    }
-  }
-
-  // حفظ مسار الملف السليم
-  const pdfUrl = file.path.replace(/\\/g, "/");
-
-  const pdf = await PDFModel.create({
-    ...data,
-    pdfUrl,
-  });
-
-  return pdf;
-};
-
-// GET ALL PDFs (ADMIN)
-export const getAllPdfsAdmin = async () => {
-  return await PDFModel.find()
-    .populate("course", "title")
-    .populate("lesson", "title")
-    .sort({ createdAt: -1 });
-};
-
-// GET PDFs BY COURSE
-export const getPdfsByCourse = async (courseId) => {
-  checkId(courseId, "course ID");
-
-  const courseExists = await CourseModel.findById(courseId);
-  if (!courseExists) {
-    throw new Error("Course not found", { cause: 404 });
-  }
-
-  return await PDFModel.find({ course: courseId, status: "active" })
-    .populate("lesson", "title")
-    .sort({ createdAt: -1 });
-};
-
-// GET PDF BY ID
-export const getPdfById = async (id) => {
-  checkId(id, "PDF ID");
-
-  const pdf = await PDFModel.findById(id)
-    .populate("course", "title")
-    .populate("lesson", "title");
-
-  if (!pdf) {
-    throw new Error("PDF not found", { cause: 404 });
-  }
-
-  return pdf;
-};
-
-// UPDATE PDF
-export const updatePdf = async (id, data, file) => {
-  checkId(id, "PDF ID");
-
-  const pdf = await PDFModel.findById(id);
-  if (!pdf) {
-    if (file) deleteLocalFile(file.path);
-    throw new Error("PDF not found", { cause: 404 });
-  }
-
-  if (data.course) {
-    checkId(data.course, "course ID");
-    const courseExists = await CourseModel.findById(data.course);
-    if (!courseExists) {
-      if (file) deleteLocalFile(file.path);
-      throw new Error("Course not found", { cause: 404 });
-    }
-  }
-
-  if (data.lesson) {
-    checkId(data.lesson, "lesson ID");
-    const lessonExists = await LessonModel.findById(data.lesson);
-    if (!lessonExists) {
-      if (file) deleteLocalFile(file.path);
-      throw new Error("Lesson not found", { cause: 404 });
-    }
-  }
-
-  // لو رفع ملف جديد نمسح القديم ونستبدل المسار
-  if (file) {
-    deleteLocalFile(pdf.pdfUrl);
-    data.pdfUrl = file.path.replace(/\\/g, "/");
-  }
-
-  Object.assign(pdf, data);
-  await pdf.save();
-
-  return pdf;
-};
-
-// DELETE PDF
-export const deletePdf = async (id) => {
-  checkId(id, "PDF ID");
-
-  const pdf = await PDFModel.findById(id);
-  if (!pdf) {
-    throw new Error("PDF not found", { cause: 404 });
-  }
-
-  // مسح الملف من الهارد ديسك أولاً
-  deleteLocalFile(pdf.pdfUrl);
-
-  await PDFModel.findByIdAndDelete(id);
-
-  return true;
-};
+import mongoose from 'mongoose';
+import path from 'node:path';
+import {uploadRoot} from '../../middlewares/upload.middleware.js';
+import PDF from '../../DB/models/PDF.js';
+import Course from '../../DB/models/Course.js';
+import Lesson from '../../DB/models/Lesson.js';
+function checkId(id) {if(!mongoose.isValidObjectId(id)) throw new Error('Invalid ID',{cause:422});}
+async function validateParents(course,lesson) {
+ checkId(course);
+ if(!await Course.exists({_id:course})) throw new Error('Course not found',{cause:404});
+ if(lesson) {checkId(lesson);if(!await Lesson.exists({_id:lesson,courseId:course})) throw new Error('Lesson does not belong to this course',{cause:422});}
+}
+function uploadedPath(file) {
+ const resolved=path.resolve(file.path);
+ if(!resolved.startsWith(path.join(uploadRoot,'pdfs')+path.sep)) throw new Error('Invalid upload path',{cause:422});
+ return resolved.replaceAll('\\','/');
+}
+export async function createPdf(data,file) {
+ if(!file) throw new Error('PDF file is required',{cause:400});
+ await validateParents(data.course,data.lesson);
+ return PDF.create({...data,lesson:data.lesson||null,pdfUrl:uploadedPath(file)});
+}
+export const getAllPdfsAdmin=()=>PDF.find().populate('course','title').populate('lesson','title').sort({createdAt:-1});
+export async function getPdfsByCourse(courseId) {await validateParents(courseId);return PDF.find({course:courseId,status:'active'}).populate('lesson','title').sort({createdAt:-1});}
+export async function getPdfById(id) {checkId(id);const pdf=await PDF.findById(id).populate('course','title').populate('lesson','title');if(!pdf) throw new Error('PDF not found',{cause:404});return pdf;}
+export async function updatePdf(id,data,file) {
+ checkId(id);const pdf=await PDF.findById(id);if(!pdf) throw new Error('PDF not found',{cause:404});
+ await validateParents(data.course||pdf.course,data.lesson===undefined?pdf.lesson:data.lesson);
+ if(data.lesson==='') data.lesson=null;
+ Object.assign(pdf,data);
+ if(file) pdf.pdfUrl=uploadedPath(file);
+ // Retain replaced physical files for a separately reviewed retention/backup policy.
+ await pdf.save();return pdf;
+}
+export async function deletePdf(id) {
+ checkId(id);const pdf=await PDF.findByIdAndDelete(id);
+ if(!pdf) throw new Error('PDF not found',{cause:404});
+ // Remove the library entry while keeping physical files recoverable.
+ return true;
+}

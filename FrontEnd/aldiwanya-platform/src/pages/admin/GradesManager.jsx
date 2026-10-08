@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import axios from '../../services/api';
 import { Plus, Edit2, Trash2, BookOpen, Loader2 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = '';
 
 export default function GradesManager() {
   const [grades, setGrades] = useState([]);
@@ -20,12 +20,11 @@ export default function GradesManager() {
   const [error, setError] = useState("");
 
 
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token") || localStorage.getItem("token");
 
  
   const fetchGrades = async () => {
     try {
-      setLoading(true);
       const res = await axios.get(`${API_BASE_URL}/admin/grades`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -37,9 +36,7 @@ export default function GradesManager() {
     }
   };
 
-  useEffect(() => {
-    fetchGrades();
-  }, []);
+  useEffect(() => {let live=true;axios.get('/admin/grades').then(res=>{if(live)setGrades(res.data.data);}).catch(()=>{if(live)setError('تعذر التحميل');}).finally(()=>{if(live)setLoading(false);});return()=>{live=false;};}, []);
 
   
   const handleOpenModal = (grade = null) => {
@@ -244,5 +241,6 @@ export default function GradesManager() {
     </div>
   );
 }
+
 
 

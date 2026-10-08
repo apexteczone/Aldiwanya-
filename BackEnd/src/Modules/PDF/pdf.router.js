@@ -15,6 +15,7 @@ import {
 } from "./pdf.validation.js";
 
 const router = express.Router();
+router.use(authentication(), allowTo(["Admin"]));
 
 // ==================================================
 // PUBLIC ROUTES
@@ -45,7 +46,7 @@ router.get("/", pdfController.getAllPdfsAdmin);
 
 // CREATE PDF (WITH UPLOAD)
 router.post(
-  "/create",
+  ["/", "/create"],
   uploadPdf.single("file"),
   validation(createPdfSchema, "body"),
   pdfController.createPdf

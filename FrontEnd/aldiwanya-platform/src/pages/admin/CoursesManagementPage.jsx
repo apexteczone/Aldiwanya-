@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../../services/api';
 import { 
   BookOpen, 
   Video, 
@@ -18,7 +18,8 @@ import { PaymentStatCard } from '../../components/admin/payments/PaymentStatCard
 import { DataTable } from '../../components/admin/common/DataTable';
 import { Pagination } from '../../components/admin/common/Pagination';
 
-const API_BASE_URL = 'http://localhost:5000';
+import { ASSET_BASE_URL } from '../../services/api';
+const API_BASE_URL = '';
 
 // دالة مساعدة لتشكيل رابط الصورة بشكل صحيح
 const getImageUrl = (imagePath) => {
@@ -27,7 +28,7 @@ const getImageUrl = (imagePath) => {
   
   // استبدال الباك سلاش بـ فورورد سلاش وإزالة أي سلاش زائدة في البداية
   const cleanPath = imagePath.replace(/\\/g, '/').replace(/^\//, '');
-  return `${API_BASE_URL}/${cleanPath}`;
+  return `${ASSET_BASE_URL}/${cleanPath}`;
 };
 
 export default function CoursesManagementPage() {
@@ -53,8 +54,8 @@ export default function CoursesManagementPage() {
   useEffect(() => {
     const fetchGrades = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get(`${API_BASE_URL}/admin/grades/getall`, {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const res = await axios.get(`${API_BASE_URL}/admin/grades`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => axios.get(`${API_BASE_URL}/admin/grades`, { headers: { Authorization: `Bearer ${token}` } }));
         
@@ -70,9 +71,8 @@ export default function CoursesManagementPage() {
   }, []);
 
   const fetchCourses = async () => {
-    setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       const res = await axios.get(`${API_BASE_URL}/admin/courses/getall`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -100,13 +100,20 @@ export default function CoursesManagementPage() {
   };
 
   useEffect(() => {
-    fetchCourses();
+    let live = true;
+    axios.get('/admin/courses').then(({data}) => {
+      if (!live) return;
+      const rows = data.data;
+      setCoursesData(rows);
+      setStats({coursesCount: String(rows.length), videosCount: String(rows.reduce((sum,c)=>sum+(c.videosCount||0),0)), enrolledStudents: String(rows.reduce((sum,c)=>sum+(c.enrolledCount||0),0)), totalLessons: String(rows.reduce((sum,c)=>sum+(c.lessonsCount||0),0))});
+    }).catch(error => console.error('Unable to load courses', error.message)).finally(()=>{if(live)setIsLoading(false);});
+    return () => {live = false;};
   }, [currentPage]);
 
   const handleDeleteCourse = async (id) => {
     if (window.confirm('هل أنت تأكد من حذف هذا الكورس بكل محتوياته؟')) {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         await axios.delete(`${API_BASE_URL}/admin/courses/${id}/delete`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -213,11 +220,11 @@ export default function CoursesManagementPage() {
       header: 'الحالة',
       cell: (row) => (
         <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${
-          row.status === 'active' 
+          row.status === 'published' 
             ? 'bg-emerald-100 text-emerald-700' 
             : 'bg-amber-100 text-amber-700'
         }`}>
-          {row.status === 'active' ? 'نشط' : 'معلق'}
+          {row.status === 'published' ? 'نشط' : 'معلق'}
         </span>
       )
     },
@@ -343,17 +350,17 @@ export default function CoursesManagementPage() {
             className="bg-surface border border-border text-text-primary rounded-xl px-3 py-2.5 focus:outline-none cursor-pointer font-medium"
           >
             <option value="">كل الحالات</option>
-            <option value="active">نشط</option>
-            <option value="inactive">معلق</option>
+            <option value="published">نشط</option>
+            <option value="draft">معلق</option>
           </select>
         </div>
       </div>
 
-      <DataTable columns={columns} data={filteredCourses} isLoading={isLoading} />
+      <DataTable columns={columns} data={filteredCourses.slice((currentPage-1)*10,currentPage*10)} isLoading={isLoading} />
 
       <Pagination 
         currentPage={currentPage}
-        totalPages={1}
+        totalPages={Math.max(1,Math.ceil(filteredCourses.length/10))}
         totalItems={filteredCourses.length}
         itemsPerPage={10}
         onPageChange={(page) => setCurrentPage(page)}
@@ -361,3 +368,4 @@ export default function CoursesManagementPage() {
     </div>
   );
 }
+

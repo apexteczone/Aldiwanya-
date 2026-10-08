@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../../services/api';
 import { User, CheckCircle2, Clock, XCircle, Eye, Edit3, Trash2 } from 'lucide-react';
 import { PaymentStatCard } from '../../components/admin/payments/PaymentStatCard';
 import { SubscriptionsFilterBar } from '../../components/admin/Subscription/SubscriptionsFilterBar';
@@ -12,40 +12,25 @@ export default function SubscriptionsPage() {
   const [selectedSubscriptions, setSelectedSubscriptions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [subscriptionsData, setSubscriptionsData] = useState([]);
   // 1. الإحصائيات العلوية الخاصة بالاشتراكات كما في الصورة
-  const [stats] = useState({
-    totalSubscriptions: '1,248',
-    activeSubscriptions: '892',
-    expiringSubscriptions: '156',
-    expiredSubscriptions: '200',
-  });
+  const stats = {totalSubscriptions:subscriptionsData.length,activeSubscriptions:subscriptionsData.filter(s=>s.status==='active').length,expiringSubscriptions:subscriptionsData.filter(s=>s.status==='expiring').length,expiredSubscriptions:subscriptionsData.filter(s=>s.status==='expired').length};
 
   // 2. البيانات المطابقة تماماً للصورة المرفقة
-  const [subscriptionsData, setSubscriptionsData] = useState([
-    { id: 1, student: 'يوسف خالد', avatar: 'https://i.pravatar.cc/150?img=11', course: 'مقدمة في الجبر', planType: 'شهري', startDate: '2025-08-01', endDate: '2025-09-01', status: 'active', amount: '250 EGP' },
-    { id: 2, student: 'سارة أحمد', avatar: 'https://i.pravatar.cc/150?img=5', course: 'المعادلات البسيطة', planType: 'ترم كامل', startDate: '2025-06-15', endDate: '2025-12-15', status: 'active', amount: '1,200 EGP' },
-    { id: 3, student: 'علي محمد', avatar: 'https://i.pravatar.cc/150?img=12', course: 'قوانين الأسس والجذور', planType: 'شهري', startDate: '2025-09-10', endDate: '2025-09-10', status: 'expiring', amount: '250 EGP' },
-    { id: 4, student: 'نورة عبدالله', avatar: 'https://i.pravatar.cc/150?img=9', course: 'المتباينات البسيطة', planType: 'ترم كامل', startDate: '2025-07-01', endDate: '2025-12-31', status: 'active', amount: '1,200 EGP' },
-    { id: 5, student: 'فهد مبارك', avatar: 'https://i.pravatar.cc/150?img=68', course: 'الاحصاء', planType: 'شهري', startDate: '2025-06-20', endDate: '2025-07-20', status: 'expired', amount: '250 EGP' },
-    { id: 6, student: 'ريم عبدالله', avatar: 'https://i.pravatar.cc/150?img=47', course: 'الهندسة التحليلية', planType: 'ترم كامل', startDate: '2025-06-01', endDate: '2025-11-30', status: 'active', amount: '1,200 EGP' },
-    { id: 7, student: 'خالد سعود', avatar: 'https://i.pravatar.cc/150?img=33', course: 'التفاضل والتكامل', planType: 'شهري', startDate: '2025-08-05', endDate: '2025-09-05', status: 'active', amount: '250 EGP' },
-    { id: 8, student: 'لطيفة محمد', avatar: 'https://i.pravatar.cc/150?img=44', course: 'المعادلات من الدرجة الأولى', planType: 'شهري', startDate: '2025-07-15', endDate: '2025-08-15', status: 'expired', amount: '250 EGP' },
-    { id: 9, student: 'عبدالله ناصر', avatar: 'https://i.pravatar.cc/150?img=60', course: 'المتتاليات', planType: 'ترم كامل', startDate: '2025-08-01', endDate: '2026-01-31', status: 'active', amount: '1,200 EGP' },
-    { id: 10, student: 'مريم خالد', avatar: 'https://i.pravatar.cc/150?img=20', course: 'الإحصاء والاحتمالات', planType: 'شهري', startDate: '2025-08-12', endDate: '2025-09-12', status: 'expiring', amount: '250 EGP' },
-  ]);
+
 
   // طلب البيانات من الباك إند
   useEffect(() => {
     const fetchSubscriptions = async () => {
       setIsLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('/api/v1/admin/subscriptions', {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const res = await axios.get('/admin/subscriptions', {
           headers: { Authorization: `Bearer ${token}` },
           params: { page: currentPage, ...filters }
         });
         if (res.data) {
-          // setSubscriptionsData(res.data.data);
+          setSubscriptionsData(res.data.data);
         }
       } catch (err) {
         console.error('خطأ أثناء جلب قائمة الاشتراكات:', err);
@@ -77,8 +62,8 @@ export default function SubscriptionsPage() {
   const handleDeleteSubscription = async (id) => {
     if (window.confirm('هل أنت تأكد من إلغاء/حذف هذا الاشتراك؟')) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`/api/v1/admin/subscriptions/${id}`, {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        await axios.delete(`/admin/subscriptions/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setSubscriptionsData(prev => prev.filter(sub => sub.id !== id));
@@ -183,28 +168,28 @@ export default function SubscriptionsPage() {
         <PaymentStatCard 
           title="إجمالي الاشتراكات"
           value={stats.totalSubscriptions}
-          changeText="+12%"
+          changeText=""
           icon={User}
           theme="blue"
         />
         <PaymentStatCard 
           title="اشتراكات نشطة"
           value={stats.activeSubscriptions}
-          changeText="+18%"
+          changeText=""
           icon={CheckCircle2}
           theme="green"
         />
         <PaymentStatCard 
           title="قيد الانتهاء"
           value={stats.expiringSubscriptions}
-          changeText="+6%"
+          changeText=""
           icon={Clock}
           theme="orange"
         />
         <PaymentStatCard 
           title="منتهية"
           value={stats.expiredSubscriptions}
-          changeText="-8%"
+          changeText=""
           isPositive={false}
           icon={XCircle}
           theme="red"
@@ -215,13 +200,13 @@ export default function SubscriptionsPage() {
       <SubscriptionsFilterBar filters={filters} setFilters={setFilters} />
 
       {/* 3. الجدول الريوزبول */}
-      <DataTable columns={columns} data={subscriptionsData} isLoading={isLoading} />
+      <DataTable columns={columns} data={subscriptionsData.slice((currentPage-1)*10,currentPage*10)} isLoading={isLoading} />
 
       {/* 4. شريط الترقيم والتصفح */}
       <Pagination 
         currentPage={currentPage}
-        totalPages={25}
-        totalItems={248}
+        totalPages={Math.max(1,Math.ceil(subscriptionsData.length/10))}
+        totalItems={subscriptionsData.length}
         itemsPerPage={10}
         onPageChange={(page) => setCurrentPage(page)}
       />
@@ -229,3 +214,4 @@ export default function SubscriptionsPage() {
     </div>
   );
 }
+

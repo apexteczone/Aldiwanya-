@@ -19,6 +19,7 @@ import {
 
 
 const router = express.Router();
+router.use(authentication(), allowTo(["Admin"]));
 
 
 // ==================================================
@@ -66,7 +67,7 @@ router.get(
 // REORDER LESSONS
 
 router.patch(
-  "/reorder",
+  ["/reorder", "/order"],
 
   authentication(),
 
@@ -84,7 +85,7 @@ router.patch(
 // CREATE LESSON
 
 router.post(
-  "/createLesson",
+  ["/", "/createLesson"],
 
   authentication(),
 
@@ -177,3 +178,5 @@ router.patch(
 
 
 export default router;
+
+

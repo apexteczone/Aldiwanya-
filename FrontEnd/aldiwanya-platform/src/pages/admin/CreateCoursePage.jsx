@@ -1,17 +1,18 @@
 // src/pages/admin/CreateCoursePage.jsx
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import axios from '../../services/api';
 
 import { CourseBasicInfoForm } from '../../components/admin/courses/CourseBasicInfoForm';
 import { CourseExtraDetailsForm } from '../../components/admin/courses/CourseExtraDetailsForm';
 import { CourseImageCard } from '../../components/admin/courses/CourseImageCard';
 import { CoursePreviewBanner } from '../../components/admin/courses/CoursePreviewBanner';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = '';
 
 export default function CreateCoursePage() {
   const navigate = useNavigate();
+  const {id}=useParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [gradesList, setGradesList] = useState([]);
 
@@ -27,15 +28,15 @@ export default function CreateCoursePage() {
     lessonsCount: '',
     durationHours: '',
     position: 0,
-    status: 'active',
+    status: 'published',
   });
 
   // 1. جلب الصفوف بالروت الخاص بك
   useEffect(() => {
     const fetchGrades = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/admin/grades', {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const response = await axios.get('/admin/grades', {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -54,6 +55,7 @@ export default function CreateCoursePage() {
     fetchGrades();
   }, []);
 
+  useEffect(()=>{if(!id)return;let live=true;axios.get('/admin/courses/'+id).then(r=>{if(live){const c=r.data.data;setFormData({...c,grade:c.grade?._id||c.grade});setImagePreview(c.coverImage||'');}});return()=>{live=false;};},[id]);
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -85,7 +87,7 @@ export default function CreateCoursePage() {
     setIsSubmitting(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
 
       const data = new FormData();
       data.append('title', formData.title);
@@ -93,15 +95,15 @@ export default function CreateCoursePage() {
       data.append('description', formData.description || '');
       data.append('subject', formData.subject || formData.title);
       data.append('position', Number(formData.position) || 0);
-      data.append('status', formData.status || 'active');
+      data.append('status', formData.status || 'published');
 
-      // ⚠️ تم استبعاد price, lessonsCount, durationHours من الـ FormData لمنع رفض الطلب من الباك إند
+      for (const field of ['price','lessonsCount','durationHours']) data.append(field, Number(formData[field]) || 0);
 
       if (imageFile) {
         data.append('coverImage', imageFile);
       }
 
-      const response = await axios.post(`${API_BASE_URL}/admin/courses/Create`, data, {
+      await axios[id ? 'patch' : 'post'](id ? `/admin/courses/${id}` : `${API_BASE_URL}/admin/courses/Create`, data, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
@@ -180,3 +182,4 @@ export default function CreateCoursePage() {
     </div>
   );
 }
+

@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const gradeSchema = new mongoose.Schema(
   {
+    legacyNumber: {type:Number,enum:[10,11,12],unique:true,sparse:true},
     name: {
       type: String,
       required: true,

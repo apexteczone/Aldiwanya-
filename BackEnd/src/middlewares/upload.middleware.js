@@ -1,77 +1,33 @@
-import multer from "multer";
-import path from "path";
-import fs from "fs";
-
-// 1. إنشاء المجلدات إن لم تكن موجودة
-const pdfDir = "uploads/pdfs";
-const imageDir = "uploads/images";
-
-if (!fs.existsSync(pdfDir)) {
-  fs.mkdirSync(pdfDir, { recursive: true });
-}
-if (!fs.existsSync(imageDir)) {
-  fs.mkdirSync(imageDir, { recursive: true });
-}
-
-// 2. إعداد التخزين وتحديد المجلد حسب نوع الملف
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
-      cb(null, imageDir);
-    } else if (file.mimetype === "application/pdf") {
-      cb(null, pdfDir);
-    } else {
-      cb(null, "uploads");
-    }
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-  },
-});
-
-// 3. فلتر الصور (تحقق دقيق من الأنواع المسموحة فقط)
-const imageFileFilter = (req, file, cb) => {
-  const allowedTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/jpg",
-    "image/webp",
-    "image/svg+xml",
-  ];
-
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(
-      new Error("Only image files (JPG, PNG, WEBP, SVG) are allowed!"),
-      false
-    );
+import multer from 'multer';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
+export const uploadRoot=path.resolve(process.env.UPLOAD_DIR||'uploads');
+const parser=multer({storage:multer.memoryStorage(),limits:{fileSize:20*1024*1024,files:1,fields:15}});
+function uploader(kind) {return {single(field) {return (req,res,next)=>parser.single(field)(req,res,async error=>{
+ if(error) return next(error);
+ if(!req.file) return next();
+ try {
+  const b=req.file.buffer;
+  let ext;
+  if(kind==='pdf' && b.subarray(0,5).toString()==='%PDF-') ext='.pdf';
+  if(kind==='images' && b.length<=5*1024*1024) {
+   if(b.subarray(0,3).equals(Buffer.from([255,216,255]))) ext='.jpg';
+   if(b.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) ext='.png';
+   if(b.subarray(0,4).toString()==='RIFF' && b.subarray(8,12).toString()==='WEBP') ext='.webp';
   }
-};
+  if(!ext) throw new Error('Unsupported or invalid file content',{cause:422});
+  const dir=path.join(uploadRoot,kind==='pdf'?'pdfs':'images');
+  await fs.mkdir(dir,{recursive:true});
+  const filename=crypto.randomUUID()+ext;
+  const filePath=path.join(dir,filename);
+  await fs.writeFile(filePath,b,{flag:'wx'});
+  Object.assign(req.file,{filename,path:filePath});
+  delete req.file.buffer;
+  res.once('finish',()=>{if(res.statusCode>=400) fs.unlink(filePath).catch(()=>{});});
+  next();
+ } catch(err){next(err);}
+ });}};}
+export const uploadImage=uploader('images');
+export const uploadPdf=uploader('pdf');
 
-// 4. فلتر ملفات ה-PDF
-const pdfFileFilter = (req, file, cb) => {
-  if (file.mimetype === "application/pdf") {
-    cb(null, true);
-  } else {
-    cb(new Error("Only PDF files are allowed!"), false);
-  }
-};
-
-export const uploadImage = multer({
-  storage: storage,
-  fileFilter: imageFileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5 MB
-  },
-});
-
-export const uploadPdf = multer({
-  storage: storage,
-  fileFilter: pdfFileFilter,
-  limits: {
-    fileSize: 20 * 1024 * 1024, // 20 MB
-  },
-});

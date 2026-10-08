@@ -1,162 +1,29 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
+import Course from '../../DB/models/Course.js';
+import Module from '../../DB/models/Module.js';
+import Lesson from '../../DB/models/Lesson.js';
+export const visibleCourse={status:{$in:['published','active']}};
+const valid=id=>{if(!mongoose.isValidObjectId(id)) throw new Error('Content not found',{cause:404});};
+export async function getPublishedCourses(req,res) {
+ const courses=await Course.find(visibleCourse).populate('grade','name').sort({position:1,_id:1}).lean();
+ res.json({success:true,data:courses});
+}
+export async function getPublishedCourseById(req,res) {
+ valid(req.params.id);
+ const course=await Course.findOne({_id:req.params.id,...visibleCourse}).lean();
+ if(!course) throw new Error('Course not found',{cause:404});
+ const modules=await Module.find({courseId:course._id,status:'published'}).sort({position:1}).lean();
+ const lessons=await Lesson.find({status:'published',$or:[{courseId:course._id,moduleId:null},{moduleId:{$in:modules.map(m=>m._id)}}]}).sort({position:1}).lean();
+ res.json({success:true,data:{...course,lessons,modules:modules.map(m=>({...m,lessons:lessons.filter(l=>String(l.moduleId)===String(m._id))}))}});
+}
+export async function getPublishedLessonById(req,res) {
+ valid(req.params.id);
+ const lesson=await Lesson.findOne({_id:req.params.id,status:'published'}).lean();
+ if(!lesson) throw new Error('Lesson not found',{cause:404});
+ const module=lesson.moduleId?await Module.findOne({_id:lesson.moduleId,status:'published'}).lean():null;
+ if(lesson.moduleId&&!module) throw new Error('Lesson not found',{cause:404});
+ const course=await Course.findOne({_id:module?.courseId||lesson.courseId,...visibleCourse}).lean();
+ if(!course) throw new Error('Course not found',{cause:404});
+ res.json({success:true,data:{lesson,module,course}});
+}
 
-import CourseModel from "../../DB/models/Course.js";
-import ModuleModel from "../../DB/models/Module.js";
-import LessonModel from "../../DB/models/Lesson.js";
-
-export const getPublishedCourses = async (req, res, next) => {
-  const courses = await CourseModel.find({
-    status: "published",
-  })
-    .sort({
-      position: 1,
-      _id: 1,
-    })
-    .select(
-      "title description grade track term academicYear thumbnail status position"
-    )
-    .lean();
-
-  return res.status(200).json({
-    success: true,
-    data: courses,
-  });
-};
-
-export const getPublishedCourseById = async (req, res, next) => {
-  const { id } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return next(
-      new Error("Course not found", {
-        cause: 404,
-      })
-    );
-  }
-
-  const course = await CourseModel.findOne({
-    _id: id,
-    status: "published",
-  })
-    .select(
-      "title description grade track term academicYear thumbnail status position"
-    )
-    .lean();
-
-  if (!course) {
-    return next(
-      new Error("Course not found", {
-        cause: 404,
-      })
-    );
-  }
-
-  const modules = await ModuleModel.find({
-    courseId: course._id,
-    status: "published",
-  })
-    .sort({
-      position: 1,
-      _id: 1,
-    })
-    .select("title description status position")
-    .lean();
-
-  const moduleIds = modules.map((module) => module._id);
-
-  const lessons = moduleIds.length
-    ? await LessonModel.find({
-        moduleId: { $in: moduleIds },
-        status: "published",
-      })
-        .sort({
-          position: 1,
-          _id: 1,
-        })
-        .select("moduleId title description status position")
-        .lean()
-    : [];
-
-  const modulesWithLessons = modules.map((module) => ({
-    ...module,
-    lessons: lessons.filter(
-      (lesson) => lesson.moduleId.toString() === module._id.toString()
-    ),
-  }));
-
-  return res.status(200).json({
-    success: true,
-    data: {
-      ...course,
-      modules: modulesWithLessons,
-    },
-  });
-};
-
-export const getPublishedLessonById = async (req, res, next) => {
-  const { id } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return next(
-      new Error("Lesson not found", {
-        cause: 404,
-      })
-    );
-  }
-
-  const lesson = await LessonModel.findOne({
-    _id: id,
-    status: "published",
-  })
-    .select("moduleId title description status position")
-    .lean();
-
-  if (!lesson) {
-    return next(
-      new Error("Lesson not found", {
-        cause: 404,
-      })
-    );
-  }
-
-  const module = await ModuleModel.findOne({
-    _id: lesson.moduleId,
-    status: "published",
-  })
-    .select("courseId title description status position")
-    .lean();
-
-  if (!module) {
-    return next(
-      new Error("Lesson not found", {
-        cause: 404,
-      })
-    );
-  }
-
-  const course = await CourseModel.findOne({
-    _id: module.courseId,
-    status: "published",
-  })
-    .select(
-      "title description grade track term academicYear thumbnail status position"
-    )
-    .lean();
-
-  if (!course) {
-    return next(
-      new Error("Lesson not found", {
-        cause: 404,
-      })
-    );
-  }
-
-  return res.status(200).json({
-    success: true,
-    data: {
-      lesson,
-      module,
-      course,
-    },
-  });
-};
