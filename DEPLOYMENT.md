@@ -39,9 +39,23 @@ schema indexes as a deployment step; on an existing database first audit duplica
 email, phone, grade legacyNumber, plan duration, payment idempotency and subscription
 paymentOrderId values. Do not blindly sync indexes on a production database.
 
-Set ADMIN_EMAIL, ADMIN_PASSWORD (12–72 characters) and ADMIN_PHONE temporarily and
-run `npm run seed:admin --prefix BackEnd`. Existing accounts are not overwritten.
-Remove the seed credentials afterwards. There is no built-in administrator password.
+Run `npm run seed:admin --prefix BackEnd` to create the administrator once.
+For NODE_ENV=development (or test) with a loopback MongoDB URI, the seed defaults to
+email `admin@example.com`, password `AldiwanyaLocal!2026`, phone `+96550000009`.
+These are public local-demo credentials. For any non-local database or production,
+explicit ADMIN_EMAIL, ADMIN_PASSWORD (at least 12 characters, at most 72 UTF-8 bytes)
+and ADMIN_PHONE are required, and the demo password is rejected.
+Environment values override the defaults. Existing accounts/passwords are never
+overwritten; conflicting email/phone or a Student account causes the seed to stop.
+Remove seed credentials from the environment after creating the account.
+
+An authenticated administrator can change their own password under
+`/admin/settings` using the current password, new password and confirmation.
+The endpoint is `PATCH /api/v1/admin/password` with `currentPassword`, `newPassword`
+and `confirmPassword`. It revokes all existing sessions and outstanding reset tokens;
+the administrator must log in again. Anonymous callers and students cannot use it,
+and no target user ID is accepted. For a forgotten current password, use the existing
+email reset flow after configuring SMTP; this endpoint is not a recovery bypass.
 
 Configure SMTP and MAIL_FROM for password-reset delivery. Reset tokens are one-use;
 password resets revoke existing sessions. SMTP delivery and the public server's

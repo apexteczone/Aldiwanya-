@@ -26,7 +26,7 @@ const CreateCoursePage=lazy(()=>import('../pages/admin/CreateCoursePage'));
 // const CoursesManagementPage = () => <div className="p-4 bg-white rounded-2xl border border-border">إدارة الكورسات</div>;
 // const PdfManagementPage = () => <div className="p-4 bg-white rounded-2xl border border-border">إدارة ملفات PDF</div>;
 // const ReportsPage = () => <div className="p-4 bg-white rounded-2xl border border-border">التقارير والإحصائيات</div>;
-const SettingsPage = () => <div className="p-4 bg-white rounded-2xl border border-border">إعدادات المنصة</div>;
+const SettingsPage=lazy(()=>import('../pages/admin/SettingsPage'));
 const NotFoundPage = () => (
   <div className="p-12 text-center space-y-3">
     <h1 className="text-4xl font-extrabold text-navy-950">404</h1>

@@ -1,5 +1,7 @@
 import {Router} from 'express';
 import Joi from 'joi';
+import {rateLimit} from 'express-rate-limit';
+import {changeAdminPassword, changeAdminPasswordSchema} from './admin.password.controller.js';
 import User from '../../DB/models/User.js';
 import Course from '../../DB/models/Course.js';
 import Lesson from '../../DB/models/Lesson.js';
@@ -9,6 +11,7 @@ import Payment from '../../DB/models/Payment.js';
 import Video from '../../DB/models/Video.js';
 import validation from '../../middlewares/validation.middleware.js';
 const router=Router();
+router.patch('/password', rateLimit({windowMs:15*60*1000,limit:10,standardHeaders:'draft-8',legacyHeaders:false}), validation(changeAdminPasswordSchema), changeAdminPassword);
 const id=Joi.string().hex().length(24);
 const idParams=validation(Joi.object({id:id.required()}),'params');
 router.get('/dashboard-stats',async(req,res)=>{
@@ -47,4 +50,3 @@ router.patch('/videos/:id',idParams,validation(Joi.object({title:Joi.string().mi
 });
 router.delete('/videos/:id',idParams,async(req,res)=>{const v=await Video.findByIdAndDelete(req.params.id);if(!v) throw new Error('Video not found',{cause:404});res.json({success:true});});
 export default router;
-

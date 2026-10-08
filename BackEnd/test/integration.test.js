@@ -165,6 +165,42 @@ test('built frontend serves direct routes while unknown API routes remain JSON',
   assert.equal(api.status,404);assert.match(api.headers.get('content-type'),/application\/json/);
  } finally {await new Promise(resolve=>site.close(resolve));delete process.env.SERVE_FRONTEND;}
 });
+test('local admin seed is repeatable, never overwrites accounts and rejects remote demo credentials',async()=>{
+ const {LOCAL_ADMIN,getAdminSeedConfig,seedAdmin}=await import('../src/DB/seed.js');
+ const local={NODE_ENV:'test',DB_URI:process.env.DB_URI,ADMIN_EMAIL:'seed-admin@example.com'};
+ assert.equal(getAdminSeedConfig(local).password,LOCAL_ADMIN.password);
+ assert.throws(()=>getAdminSeedConfig({...local,NODE_ENV:'production'}),/Set ADMIN/);
+ assert.throws(()=>getAdminSeedConfig({...local,DB_URI:'mongodb://db.example.com/aldiwanya'}),/Set ADMIN/);
+ assert.throws(()=>getAdminSeedConfig({...local,NODE_ENV:'production',ADMIN_PASSWORD:LOCAL_ADMIN.password,ADMIN_PHONE:LOCAL_ADMIN.phoneNumber}),/demo password/);
+ assert.equal((await seedAdmin(local)).created,true);
+ const account=await User.findOne({email:local.ADMIN_EMAIL}).select('+passwordHash');assert.equal(account.role,'Admin');
+ const originalHash=account.passwordHash;
+ assert.equal((await seedAdmin({...local,ADMIN_PASSWORD:'ChangedSeedOnly!2026'})).created,false);
+ assert.equal((await User.findById(account._id).select('+passwordHash')).passwordHash,originalHash);
+ await assert.rejects(()=>seedAdmin({...local,ADMIN_EMAIL:'student@example.com'}),/another account/);
+ assert.equal((await User.findById(studentId)).role,'Student');
+});
+test('admin password controller verifies current password, revokes sessions and reset tokens',async()=>{
+ const {LOCAL_ADMIN}=await import('../src/DB/seed.js');
+ const login=await request('POST','/api/v1/auth/login',{identifier:'seed-admin@example.com',password:LOCAL_ADMIN.password});assert.equal(login.status,200);
+ const token=login.data.accessToken;
+ const account=await User.findOne({email:'seed-admin@example.com'});
+ await ResetToken.create({userId:account._id,tokenHash:crypto.randomBytes(32).toString('hex'),expiresAt:new Date(Date.now()+60000)});
+ const nextPassword=crypto.randomBytes(18).toString('base64url');
+ const body={currentPassword:LOCAL_ADMIN.password,newPassword:nextPassword,confirmPassword:nextPassword};
+ assert.equal((await request('PATCH','/api/v1/admin/password',body)).status,401);
+ assert.equal((await request('PATCH','/api/v1/admin/password',body,studentToken)).status,403);
+ assert.equal((await request('PATCH','/api/v1/admin/password',{...body,userId:studentId},token)).status,422);
+ assert.equal((await request('PATCH','/api/v1/admin/password',{...body,currentPassword:'incorrect'},token)).status,400);
+ assert.equal((await request('PATCH','/api/v1/admin/password',{...body,newPassword:'short',confirmPassword:'short'},token)).status,422);
+ assert.equal((await request('PATCH','/api/v1/admin/password',{...body,confirmPassword:'mismatched'},token)).status,422);
+ assert.equal((await request('PATCH','/api/v1/admin/password',{...body,newPassword:LOCAL_ADMIN.password,confirmPassword:LOCAL_ADMIN.password},token)).status,422);
+ const result=await request('PATCH','/api/v1/admin/password',body,token);assert.equal(result.status,200,JSON.stringify(result));assert.equal(JSON.stringify(result).includes(nextPassword),false);
+ assert.equal(await ResetToken.countDocuments({userId:account._id}),0);
+ assert.equal((await request('GET','/api/v1/user/me',undefined,token)).status,401);
+ assert.equal((await request('POST','/api/v1/auth/login',{identifier:account.email,password:LOCAL_ADMIN.password})).status,401);
+ assert.equal((await request('POST','/api/v1/auth/login',{identifier:account.email,password:nextPassword})).status,200);
+});
 test('password reset consumes the token once and revokes existing sessions',async()=>{
  const token=crypto.randomBytes(32).toString('hex'),nextPassword=crypto.randomBytes(18).toString('base64url');
  await ResetToken.create({userId:studentId,tokenHash:crypto.createHash('sha256').update(token).digest('hex'),expiresAt:new Date(Date.now()+60000)});
