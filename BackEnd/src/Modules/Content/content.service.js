@@ -6,11 +6,14 @@ export const visibleCourse={status:{$in:['published','active']}};
 const valid=id=>{if(!mongoose.isValidObjectId(id)) throw new Error('Content not found',{cause:404});};
 export async function getPublishedCourses(req,res) {
  const courses=await Course.find(visibleCourse).populate('grade','name').sort({position:1,_id:1}).lean();
+ const modules=await Module.find({courseId:{$in:courses.map(c=>c._id)},status:'published'}).select('_id').lean();
+ const counts=await Lesson.aggregate([{$match:{status:'published',courseId:{$in:courses.map(c=>c._id)},$or:[{moduleId:null},{moduleId:{$in:modules.map(m=>m._id)}}]}},{$group:{_id:'$courseId',count:{$sum:1}}}]);
+ for(const course of courses) course.lessonsCount=counts.find(c=>String(c._id)===String(course._id))?.count||0;
  res.json({success:true,data:courses});
 }
 export async function getPublishedCourseById(req,res) {
  valid(req.params.id);
- const course=await Course.findOne({_id:req.params.id,...visibleCourse}).lean();
+ const course=await Course.findOne({_id:req.params.id,...visibleCourse}).populate('grade','name').lean();
  if(!course) throw new Error('Course not found',{cause:404});
  const modules=await Module.find({courseId:course._id,status:'published'}).sort({position:1}).lean();
  const lessons=await Lesson.find({status:'published',$or:[{courseId:course._id,moduleId:null},{moduleId:{$in:modules.map(m=>m._id)}}]}).sort({position:1}).lean();
@@ -26,4 +29,3 @@ export async function getPublishedLessonById(req,res) {
  if(!course) throw new Error('Course not found',{cause:404});
  res.json({success:true,data:{lesson,module,course}});
 }
-

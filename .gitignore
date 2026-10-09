@@ -18,3 +18,6 @@ Thumbs.db
 *.sln
 *.sw?
 BackEnd/uploads/
+BackEnd/uploads-e2e/
+test-results/
+playwright-report/

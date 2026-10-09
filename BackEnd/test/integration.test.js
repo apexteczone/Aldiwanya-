@@ -89,6 +89,37 @@ test('video access and publication are enforced on the server',async()=>{
  assert.equal((await request('GET','/api/v1/library/lessons/'+lessonId+'/videos',undefined,studentToken)).status,404);
  await request('PATCH','/api/v1/admin/courses/'+courseId+'/publish',{},adminToken);
 });
+test('public previews and student activity respect publication, identity and paid access',async()=>{
+ const previews=await request('GET','/api/v1/previews');assert.equal(previews.status,200);assert.equal(previews.data.length,1);assert.equal(previews.data[0].courseId,courseId);assert.equal(previews.data[0].videoUrl,undefined);
+ const publicPlayback=await request('GET','/api/v1/library/lessons/'+lessonId+'/videos');assert.equal(publicPlayback.status,200);assert.equal(publicPlayback.data.length,1);assert.equal(publicPlayback.data[0].accessLevel,'free');
+ assert.equal((await request('GET','/api/v1/library/lessons/'+lessonId+'/videos',undefined,'invalid')).status,401);
+ const videoId=previews.data[0]._id;
+ assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'favorite',id:videoId,enabled:true})).status,401);
+ assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'favorite',id:videoId,enabled:true,userId:studentId},studentToken)).status,422);
+ for(let i=0;i<2;i++)assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'favorite',id:videoId,enabled:true},studentToken)).status,200);
+ let activity=await request('GET','/api/v1/student/activity',undefined,studentToken);assert.equal(activity.data.favoriteVideos.length,1);assert.equal(activity.data.favoriteVideos[0].videoUrl,undefined);
+ assert.equal((await request('GET','/api/v1/student/activity',undefined,adminToken)).data.favoriteVideos.length,0);
+ assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'complete',id:lessonId,enabled:true},studentToken)).status,403);
+ const direct=await request('POST','/api/v1/admin/lessons',{title:'Free activity lesson',courseId,status:'published'},adminToken);assert.equal(direct.status,201);
+ const free=await request('POST','/api/v1/admin/videos',{title:'Public activity video',lessonId:direct.data._id,videoUrl:'https://example.com/free.mp4',accessLevel:'free',status:'published'},adminToken);assert.equal(free.status,201);
+ assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'complete',id:direct.data._id,enabled:true},studentToken)).status,200);
+ activity=await request('GET','/api/v1/student/activity',undefined,studentToken);assert.equal(activity.data.completedLessons.length,1);assert.ok(activity.data.startedCourses.includes(courseId));
+ const {default:Lesson}=await import('../src/DB/models/Lesson.js');await Lesson.updateOne({_id:direct.data._id},{$set:{status:'draft'}});
+ assert.equal((await request('GET','/api/v1/student/activity',undefined,studentToken)).data.completedLessons.length,0);
+ assert.equal((await request('GET','/api/v1/previews')).data.length,1);
+ assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'complete',id:direct.data._id,enabled:true},studentToken)).status,404);
+ await request('PATCH','/api/v1/admin/courses/'+courseId+'/hide',{},adminToken);
+ assert.equal((await request('GET','/api/v1/previews')).data.length,0);
+ assert.equal((await request('GET','/api/v1/student/activity',undefined,studentToken)).data.favoriteVideos.length,0);
+ await request('PATCH','/api/v1/admin/courses/'+courseId+'/publish',{},adminToken);
+ assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'favorite',id:videoId,enabled:false},studentToken)).status,200);
+ assert.equal((await request('GET','/api/v1/student/activity',undefined,studentToken)).data.favoriteVideos.length,0);
+ const courses=await request('GET','/api/v1/courses');assert.equal(courses.data.find(c=>c._id===courseId).lessonsCount,1);
+});
+test('monthly plans can be created from the dashboard without enabling checkout',async()=>{
+ const monthly=await request('POST','/api/v1/plan/CreatePlan',{title:'Monthly test',durationMonths:1,amountMinor:1500,currency:'KWD'},adminToken);assert.equal(monthly.status,201,JSON.stringify(monthly));
+ assert.ok((await request('GET','/api/v1/plan/getActivePlans')).data.some(p=>p.durationMonths===1));
+});
 test('PDF uploads are admin-only while library and static downloads are public',async()=>{
  const invalid=new FormData();invalid.set('file',new Blob(['<script>alert(1)</script>'],{type:'application/pdf'}),'bad.pdf');invalid.set('title','Bad PDF');invalid.set('course',courseId);
  assert.equal((await request('POST','/api/v1/admin/pdfs',invalid,adminToken)).status,422);
@@ -157,7 +188,7 @@ test('built frontend serves direct routes while unknown API routes remain JSON',
  const site=app.listen(0,'127.0.0.1');await new Promise(resolve=>site.once('listening',resolve));
  const origin='http://127.0.0.1:'+site.address().port;
  try {
-  for(const route of ['/','/dashboard','/admin/courses','/library']) {
+  for(const route of ['/','/dashboard','/admin/courses','/library','/courses','/login','/register','/forgot-password','/reset-password','/plans','/previews','/account','/subscriptions']) {
    const r=await fetch(origin+route,{headers:{Accept:'text/html'}});
    assert.equal(r.status,200);assert.match(await r.text(),/<div id="root">/);
   }

@@ -1,0 +1,52 @@
+# Reference student interface
+
+The student/public implementation imported from Amna was removed, including its
+mock dataset and local-storage demo components. The existing BackEnd and
+FrontEnd/aldiwanya-platform structure and administration pages are retained.
+
+Implemented reference layouts: home, separate login and registration, password
+recovery/reset, student dashboard/account, courses/catalog, course lesson player,
+free previews, library, subscription plans/history. Arabic RTL, responsive
+layouts and bundled Cairo fonts are used. The existing main-branch logo is used.
+
+Courses, grades, lessons, PDFs, plans and profiles come from the existing API.
+No marketing/sample courses, students, ratings, prices or testimonials are seeded.
+Missing content produces explicit empty states; server failures have retry states.
+Course counts reflect published lessons, including legacy modules. PDF categories
+are populated from uploaded PDF types; course filters come from grade/subject.
+
+Student favorites, started courses and completed lessons are persisted in the
+new StudentActivity collection, scoped to the authenticated user. Completion is
+self-reported and does not grant access or certificates. Public previews expose
+only published free videos beneath published parents; paid video URLs remain
+protected by the existing subscription check. The player uses HTML5 video: admin
+URLs must point to playable HTTPS media files, not a YouTube/watch webpage.
+
+Monthly plans are supported alongside three-month and annual plans. Payment
+remains disabled pending the MyFatoorah settlement integration. Prices come from
+plans and use each plan's currency/minor units; no screenshot prices are copied.
+
+Social login is visibly unavailable until providers are configured. No fake
+newsletter signup, testimonial, rating or contact information is supplied. Legal
+pages explicitly state that their operator text is not published yet. The
+operator must supply those texts and contact channels before public launch.
+
+## Artwork
+
+`public/diwaniya-majlis.png` was generated with the built-in image generation tool
+because the reference majlis artwork was not present on maryam. Prompt:
+"Photorealistic wide Kuwaiti diwaniya at dusk, navy and burgundy geometric sofas,
+carved Arabic arch on the right overlooking Kuwait Towers, brass coffee dallah,
+warm lamps, dark navy negative space on the left; no text, logos or people."
+Kuwait skyline and existing main logo assets are reused. Cairo license is in
+`public/Cairo-OFL.txt`.
+
+## Verification
+
+GitHub Actions runs lint, production build, API integration tests with MongoDB 8
+and real-browser E2E tests on Node 24. The MongoDB service is disposable. Browser
+tests exercise empty states, auth forms, API publishing, public PDF download,
+disabled checkout, real video playback, saved favorites/progress/profile, direct
+routes and mobile overflow. Screenshots and failure traces are workflow artifacts.
+Test records and the CC0 video fixture exist only in the isolated test workflow;
+none are seeded into normal application databases.

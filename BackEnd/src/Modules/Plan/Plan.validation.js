@@ -13,7 +13,7 @@ export const createPlanSchema = joi.object({
 
   durationMonths: joi
     .number()
-    .valid(3, 12)
+    .valid(1, 3, 12)
     .required(),
 
   amountMinor: joi

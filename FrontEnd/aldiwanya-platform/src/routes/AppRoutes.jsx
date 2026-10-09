@@ -1,8 +1,17 @@
 import {lazy,Suspense} from 'react';
 // import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import StudentApp from '../pages/dashboard/StudentApp';
-import PublicLibraryPage from '../pages/courses/PublicLibraryPage';
+import HomePage from '../pages/home/HomePage';
+import AccessPage from '../pages/auth/AccessPage';
+import CoursesPage from '../pages/courses/CoursesPage';
+import LibraryPage from '../pages/library/LibraryPage';
+import PlansPage from '../pages/plans/PlansPage';
+import DashboardPage, {SubscriptionHistory} from '../pages/dashboard/DashboardPage';
+import AccountPage from '../pages/dashboard/AccountPage';
+import PreviewsPage from '../pages/courses/PreviewsPage';
+import InfoPage from '../pages/home/InfoPage';
+import StudentGuard from '../components/common/StudentGuard';
+import {PlatformLayout} from '../components/common/PlatformUI';
 import PasswordPage from '../pages/auth/PasswordPage';
 import CourseDetailsPage from '../pages/courses/CourseDetailsPage';
 import AdminGuard from '../components/common/AdminGuard';
@@ -42,7 +51,7 @@ export default function AppRoutes() {
   return (
     <Suspense fallback={<p role="status">جاري التحميل…</p>}><Routes>
       {/* صفحة تسجيل الدخول */}
-      <Route path="/auth/login" element={<StudentApp />} />
+      <Route path="/auth/login" element={<Navigate to="/login" replace />} />
 
       
       <Route
@@ -86,15 +95,24 @@ export default function AppRoutes() {
       />
 
       {/* إعادة التوجيه الافتراضية للتطبيق */}
-      <Route path="/" element={<StudentApp />} />
-      <Route path="/login" element={<StudentApp />} />
-      <Route path="/register" element={<StudentApp />} />
-      <Route path="/dashboard" element={<StudentApp />} />
-      <Route path="/library" element={<PublicLibraryPage />} />
+      <Route element={<PlatformLayout/>}>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<AccessPage key="login" />} />
+      <Route path="/register" element={<AccessPage key="register" register />} />
+      <Route path="/dashboard" element={<StudentGuard><DashboardPage /></StudentGuard>} />
+      <Route path="/account" element={<StudentGuard><AccountPage /></StudentGuard>} />
+      <Route path="/subscriptions" element={<StudentGuard><SubscriptionHistory /></StudentGuard>} />
+      <Route path="/courses" element={<CoursesPage />} />
+      <Route path="/plans" element={<PlansPage />} />
+      <Route path="/library" element={<LibraryPage />} />
+      <Route path="/previews" element={<PreviewsPage />} />
       <Route path="/forgot-password" element={<PasswordPage />} />
       <Route path="/reset-password" element={<PasswordPage reset />} />
       <Route path="/courses/:id" element={<CourseDetailsPage />} />
+      <Route path="/courses/:id/preview" element={<CourseDetailsPage preview />} />
+      {['about','contact','privacy','terms'].map(type=><Route key={type} path={'/'+type} element={<InfoPage type={type}/>}/>)}
       <Route path="*" element={<NotFoundPage />} />
+      </Route>
     </Routes></Suspense>
   );
 }

@@ -26,7 +26,7 @@ router.get('/pdfs/:id/download',async(req,res,next)=>{
  if(!file.startsWith(path.join(uploadRoot,'pdfs')+path.sep)) throw new Error('File is unavailable',{cause:404});
  res.download(file,'document.pdf',err=>{if(err) next(new Error('File is unavailable',{cause:404}));});
 });
-router.get('/lessons/:id/videos',authentication(),async(req,res)=>{
+router.get('/lessons/:id/videos',(req,res,next)=>req.headers.authorization?authentication()(req,res,next):next(),async(req,res)=>{
  if(!mongoose.isValidObjectId(req.params.id)) throw new Error('Not found',{cause:404});
  const lesson=await Lesson.findOne({_id:req.params.id,status:'published'});
  if(!lesson) throw new Error('Not found',{cause:404});
@@ -34,7 +34,7 @@ router.get('/lessons/:id/videos',authentication(),async(req,res)=>{
  if(lesson.moduleId&&!module) throw new Error('Not found',{cause:404});
  if(!await Course.exists({_id:module?.courseId||lesson.courseId,...visibleCourse})) throw new Error('Not found',{cause:404});
  const filter={lessonId:lesson._id,status:'published',processingStatus:'ready'};
- if(req.user.role!=='Admin'&&!await hasSubscription(req.user._id)) filter.accessLevel='free';
- res.json({success:true,data:await Video.find(filter).select('title videoUrl durationSeconds accessLevel').lean()});
+ if(!req.user || (req.user.role!=='Admin'&&!await hasSubscription(req.user._id))) filter.accessLevel='free';
+ res.json({success:true,data:await Video.find(filter).select('title videoUrl thumbnailUrl durationSeconds accessLevel').sort({position:1}).lean()});
 });
 export default router;

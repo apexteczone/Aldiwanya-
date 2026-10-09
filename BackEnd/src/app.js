@@ -21,13 +21,14 @@ import contentRouter from './Modules/Content/content.controller.js';
 import libraryRouter from './Modules/Content/library.router.js';
 import paymentRouter from './Modules/Payment/paymentController.js';
 import adminRouter from './Modules/Admin/adminController.js';
+import studentRouter from './Modules/Content/student.router.js';
 import globalErrorHandler from './utils/errorHandling/globalErrorHandler.js';
 export default async function bootstrap(app,express,{connect=true}={}) {
  const {origins}=validateConfig();
  if(connect) await connectDB();
  app.disable('x-powered-by');
  if(process.env.TRUST_PROXY_HOPS) app.set('trust proxy',Number(process.env.TRUST_PROXY_HOPS));
- app.use(helmet({crossOriginResourcePolicy:{policy:'same-site'}}));
+ app.use(helmet({crossOriginResourcePolicy:{policy:'same-site'},contentSecurityPolicy:{directives:{imgSrc:["'self'",'data:','https:'],mediaSrc:["'self'",'https:','blob:']}}}));
  app.use(cors({origin:(origin,cb)=>cb(origin&&!origins.includes(origin)?new Error('Origin not allowed',{cause:403}):null,true)}));
  app.use(express.json({limit:'128kb'}));
  app.use(express.urlencoded({extended:false,limit:'128kb'}));
@@ -55,6 +56,7 @@ export default async function bootstrap(app,express,{connect=true}={}) {
  admin.use(adminRouter);
  api.use('/admin',admin);
  api.use(contentRouter);
+ api.use(studentRouter);
  app.use('/api/v1',api);
  const serveFrontend=process.env.SERVE_FRONTEND==='true';
  app.use('/',(req,res,next)=>serveFrontend&&req.method==='GET'&&req.get('accept')?.includes('text/html')?next():api(req,res,next));
@@ -67,5 +69,3 @@ export default async function bootstrap(app,express,{connect=true}={}) {
  app.use((req,res)=>res.status(404).json({success:false,error:{message:'Route not found'}}));
  app.use(globalErrorHandler);
 }
-
-

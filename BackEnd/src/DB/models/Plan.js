@@ -11,7 +11,7 @@ const planSchema = new mongoose.Schema(
 
     durationMonths: {
       type: Number,
-      enum: [3, 12],
+      enum: [1, 3, 12],
       required: true,
     },
 
