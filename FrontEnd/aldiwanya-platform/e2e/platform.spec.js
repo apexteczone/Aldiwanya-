@@ -196,7 +196,7 @@ test("dashboard publishing produces public courses, plans, free video and PDFs",
     await page.goto("/admin/" + route);
     await page.waitForLoadState("networkidle");
     await expect(page).toHaveURL(new RegExp("/admin/" + route + "$"));
-    await expect(page.locator("h1, h2").first()).toBeVisible();
+    await expect(page.getByRole("heading").first()).toBeVisible();
     await screenshot(page, info, "admin-" + route.replaceAll("/", "-"));
   }
 });
@@ -288,3 +288,4 @@ test("registration, playback, favorites, progress and profile persist through th
     );
   }
 });
+
