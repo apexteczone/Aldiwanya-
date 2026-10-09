@@ -30,6 +30,7 @@ const lessonSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    internalNotes: {type: String, trim: true, maxlength: 2000, default: '', select: false},
 
     status: {
       type: String,
@@ -58,4 +59,3 @@ lessonSchema.index({
 const LessonModel = mongoose.model("Lesson", lessonSchema);
 
 export default LessonModel;
-

@@ -243,3 +243,35 @@ test('password reset consumes the token once and revokes existing sessions',asyn
  assert.equal((await request('POST','/api/v1/auth/logout',{},studentToken)).status,200);
  assert.equal((await request('GET','/api/v1/user/me',undefined,studentToken)).status,401);
 });
+
+test('admin reference forms preserve private notes, ordering, uploads and plan descriptions',async()=>{
+ const created=await request('POST','/api/v1/admin/lessons',{title:'Reference lesson',courseId,position:7,description:'Public description',internalNotes:'Internal staff-only note',status:'published'},adminToken);
+ assert.equal(created.status,201,JSON.stringify(created));const id=created.data._id;assert.equal(created.data.position,7);
+ const adminRows=await request('GET','/api/v1/admin/lessons',undefined,adminToken);assert.equal(adminRows.data.find(l=>l._id===id).internalNotes,'Internal staff-only note');
+ const publicLesson=await request('GET','/api/v1/lessons/'+id);assert.equal(publicLesson.data.lesson.internalNotes,undefined);
+ const publicCourse=await request('GET','/api/v1/courses/'+courseId);assert.equal(publicCourse.data.lessons.find(l=>l._id===id).internalNotes,undefined);
+ assert.equal((await request('PATCH','/api/v1/admin/lessons/'+id,{position:2,internalNotes:'Updated note'},adminToken)).status,200);
+ assert.equal((await request('PATCH','/api/v1/admin/lessons/'+id,{position:-1},adminToken)).status,422);
+ const data=new FormData();data.set('title','Reference uploaded video');data.set('lessonId',id);data.set('videoUrl','https://www.youtube.com/watch?v=dQw4w9WgXcQ');data.set('description','Video description');data.set('accessLevel','paid');data.set('status','published');
+ data.set('thumbnail',new Blob([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aXioAAAAASUVORK5CYII=','base64')],{type:'image/png'}),'thumb.png');
+ const video=await request('POST','/api/v1/admin/videos',data,adminToken);assert.equal(video.status,201,JSON.stringify(video));assert.match(video.data.thumbnailUrl,/^\/uploads\/images\/.+\.png$/);assert.equal(video.data.description,'Video description');
+ assert.equal((await request('GET','/api/v1/library/lessons/'+id+'/videos')).data.length,0);
+ assert.equal((await request('PATCH','/api/v1/admin/videos/'+video.data._id,{videoUrl:'javascript:alert(1)'},adminToken)).status,422);
+ assert.equal((await request('PATCH','/api/v1/admin/videos/'+video.data._id,{videoUrl:'https://vimeo.com/123456',description:'Updated'},studentToken)).status,403);
+ assert.equal((await request('PATCH','/api/v1/admin/videos/'+video.data._id,{videoUrl:'https://vimeo.com/123456',description:'Updated'},adminToken)).status,200);
+ assert.equal((await request('DELETE','/api/v1/admin/lessons/'+id,undefined,adminToken)).status,409);
+ const invalid=new FormData();invalid.set('title','Bad upload');invalid.set('lessonId',id);invalid.set('videoUrl','https://example.com/v.mp4');invalid.set('thumbnail',new Blob(['<svg onload="alert(1)"></svg>'],{type:'image/png'}),'fake.png');assert.equal((await request('POST','/api/v1/admin/videos',invalid,adminToken)).status,422);
+ const plan=await request('POST','/api/v1/plan/CreatePlan',{title:'Six month term',durationMonths:6,amountMinor:1500,currency:'KWD',description:'Term description'},adminToken);assert.equal(plan.status,201,JSON.stringify(plan));
+ assert.equal((await request('PATCH','/api/v1/plan/'+plan.data._id+'/update',{description:'Edited term'},adminToken)).data.description,'Edited term');
+ assert.equal((await request('POST','/api/v1/plan/CreatePlan',{title:'Invalid duration',durationMonths:2,amountMinor:1500,currency:'KWD'},adminToken)).status,422);
+});
+
+test('video embeds use only trusted provider URLs',async()=>{
+ const {videoSource}=await import('../../FrontEnd/aldiwanya-platform/src/utils/videoSource.js');
+ assert.equal(videoSource('javascript:alert(1)'),null);
+ assert.equal(videoSource('https://youtube.com/watch?v=invalid'),null);
+ assert.equal(videoSource('https://www.youtube.com/watch?v=dQw4w9WgXcQ').src,'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ');
+ assert.equal(videoSource('https://youtu.be/dQw4w9WgXcQ').kind,'embed');
+ assert.equal(videoSource('https://vimeo.com/123456/abc123').src,'https://player.vimeo.com/video/123456?h=abc123');
+ assert.equal(videoSource('https://youtube.com.evil.test/watch?v=dQw4w9WgXcQ').kind,'file');
+});

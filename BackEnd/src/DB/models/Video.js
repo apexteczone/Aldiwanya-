@@ -18,6 +18,7 @@ const videoSchema = new mongoose.Schema(
     },
 
     videoUrl: {type:String, default:null},
+    description: {type:String, trim:true, maxlength:2000, default:''},
     thumbnailUrl: {type:String, default:null},
     provider: {
       type: String,

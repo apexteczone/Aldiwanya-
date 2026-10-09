@@ -57,3 +57,12 @@ disabled checkout, real video playback, saved favorites/progress/profile, direct
 routes and mobile overflow. Screenshots and failure traces are workflow artifacts.
 Test records and the CC0 video fixture exist only in the isolated test workflow;
 none are seeded into normal application databases.
+
+## Admin reference pages (October 2026)
+- Kept the existing admin shell, logo, colors and sidebar; combined plans and student subscriptions under `/admin/subscriptions`. The old `/admin/plans` link redirects there.
+- Lessons use the second approved reference: course, title, description, one-based display order, private internal notes and a searchable table. Storage order remains zero-based for compatibility. New lessons remain drafts until explicitly published. Existing attachment deletion protections remain in place.
+- Internal notes are excluded by default from Mongoose queries and are selected explicitly only for the admin lesson list.
+- Video creation has dependent course/lesson selectors, thumbnail upload, description, provider preview, editing and a filtered table. HTTPS file playback remains supported; YouTube and Vimeo embeds use fixed trusted iframe origins. Provider privacy/embedding settings can still prevent playback. Uploads reuse the existing file-size and content-signature validation.
+- Plan forms support monthly and term durations (3/6 months), retaining existing annual plans. Prices keep the existing currency and minor-unit convention. Existing plan durations cannot be changed. Disabling a plan hides it from new purchases without deleting financial history.
+- Offline viewing and device-limit controls are shown as unavailable because those capabilities are not implemented. They do not advertise false entitlements. MyFatoorah checkout remains disabled.
+- No sample lessons, videos, plans or accounts are added to the application database. Fixtures exist only in isolated CI tests.

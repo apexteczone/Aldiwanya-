@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
 import axios from '../../services/api';
-import { User, CheckCircle2, Clock, XCircle, Eye, Edit3, Trash2 } from 'lucide-react';
+import { User, CheckCircle2, Clock, XCircle, Eye, Edit3, Trash2, Crown } from 'lucide-react';
+import PlansManagementPage from './PlansManagementPage';
+import {ReferenceHeader} from '../../components/admin/common/ReferenceUI';
 import { PaymentStatCard } from '../../components/admin/payments/PaymentStatCard';
 import { SubscriptionsFilterBar } from '../../components/admin/Subscription/SubscriptionsFilterBar';
 import { DataTable } from '../../components/admin/common/DataTable';
 import { Pagination } from '../../components/admin/common/Pagination';
 
 export default function SubscriptionsPage() {
+  const [tab,setTab]=useState('plans');
+  return <div className="admin-reference"><ReferenceHeader title="إدارة الاشتراكات" subtitle="يمكنك إضافة وتعديل خطط الاشتراكات الخاصة بالمنصة." icon={Crown}/><div className="ref-tabs" role="tablist" aria-label="إدارة الاشتراكات"><button role="tab" aria-selected={tab==='plans'} onClick={()=>setTab('plans')}>خطط الاشتراكات</button><button role="tab" aria-selected={tab==='students'} onClick={()=>setTab('students')}>اشتراكات الطلاب</button></div><section role="tabpanel">{tab==='plans'?<PlansManagementPage/>:<StudentSubscriptions/>}</section></div>;
+}
+function StudentSubscriptions() {
   const [filters, setFilters] = useState({ search: '', status: '', type: '', course: '' });
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSubscriptions, setSelectedSubscriptions] = useState([]);
@@ -214,4 +220,3 @@ export default function SubscriptionsPage() {
     </div>
   );
 }
-

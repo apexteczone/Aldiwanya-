@@ -11,7 +11,7 @@ const planSchema = new mongoose.Schema(
 
     durationMonths: {
       type: Number,
-      enum: [1, 3, 12],
+      enum: [1, 3, 6, 12],
       required: true,
     },
 
@@ -31,6 +31,7 @@ const planSchema = new mongoose.Schema(
       maxlength: 3,
     },
 
+    description: {type: String, trim: true, maxlength: 1000, default: ''},
     active: {
       type: Boolean,
       default: true,

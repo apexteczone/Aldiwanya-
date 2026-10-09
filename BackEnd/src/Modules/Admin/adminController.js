@@ -8,7 +8,7 @@ import Lesson from '../../DB/models/Lesson.js';
 import PDF from '../../DB/models/PDF.js';
 import Subscription from '../../DB/models/Subscription.js';
 import Payment from '../../DB/models/Payment.js';
-import Video from '../../DB/models/Video.js';
+import videoRouter from './admin.video.router.js';
 import validation from '../../middlewares/validation.middleware.js';
 const router=Router();
 router.patch('/password', rateLimit({windowMs:15*60*1000,limit:10,standardHeaders:'draft-8',legacyHeaders:false}), validation(changeAdminPasswordSchema), changeAdminPassword);
@@ -35,18 +35,5 @@ router.get('/payments',async(req,res)=>{
  const rows=await Payment.find().populate('user_id','fullName').populate('plan_id','title').select('-idempotency_key').lean();
  res.json({success:true,data:rows.map(p=>({id:p._id,student:p.user_id?.fullName||'Deleted user',course:p.plan_id?.title||'',amount:p.price_snapshot+' '+p.currency,amountValue:p.price_snapshot,currency:p.currency,methodType:p.provider||'unknown',method:p.provider||'—',date:p.created_at?.toISOString().slice(0,10),trx:p.provider_reference||'—',status:p.status==='succeeded'?'success':['failed','canceled'].includes(p.status)?'failed':'pending'}))});
 });
-router.get('/videos',async(req,res)=>{
- const videos=await Video.find().populate('lessonId','title').lean();
- res.json({success:true,data:videos.map(v=>({...v,id:v._id,lesson:v.lessonId?.title||'',duration:v.durationSeconds||0,uploadDate:v.createdAt.toISOString().slice(0,10),status:v.status==='published'?'active':'inactive',thumbnail:v.thumbnailUrl||''}))});
-});
-router.post('/videos',validation(Joi.object({title:Joi.string().min(2).max(200).required(),lessonId:id.required(),videoUrl:Joi.string().uri({scheme:['https']}).required(),thumbnailUrl:Joi.string().uri({scheme:['https']}).allow(''),durationSeconds:Joi.number().min(0),accessLevel:Joi.string().valid('free','paid').default('paid'),status:Joi.string().valid('draft','published').default('draft')})),async(req,res)=>{
- if(!await Lesson.exists({_id:req.body.lessonId})) throw new Error('Lesson not found',{cause:404});
- const video=await Video.create({...req.body,processingStatus:'ready'});
- res.status(201).json({success:true,data:video});
-});
-router.patch('/videos/:id',idParams,validation(Joi.object({title:Joi.string().min(2).max(200),status:Joi.string().valid('draft','published','archived'),accessLevel:Joi.string().valid('free','paid')})),async(req,res)=>{
- const video=await Video.findByIdAndUpdate(req.params.id,{$set:req.body},{returnDocument: 'after',runValidators:true});
- if(!video) throw new Error('Video not found',{cause:404});res.json({success:true,data:video});
-});
-router.delete('/videos/:id',idParams,async(req,res)=>{const v=await Video.findByIdAndDelete(req.params.id);if(!v) throw new Error('Video not found',{cause:404});res.json({success:true});});
+router.use(videoRouter);
 export default router;

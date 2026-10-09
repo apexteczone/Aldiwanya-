@@ -28,7 +28,7 @@ export default async function bootstrap(app,express,{connect=true}={}) {
  if(connect) await connectDB();
  app.disable('x-powered-by');
  if(process.env.TRUST_PROXY_HOPS) app.set('trust proxy',Number(process.env.TRUST_PROXY_HOPS));
- app.use(helmet({crossOriginResourcePolicy:{policy:'same-site'},contentSecurityPolicy:{directives:{imgSrc:["'self'",'data:','https:'],mediaSrc:["'self'",'https:','blob:']}}}));
+ app.use(helmet({crossOriginResourcePolicy:{policy:'same-site'},contentSecurityPolicy:{directives:{imgSrc:["'self'",'data:','blob:','https:'],mediaSrc:["'self'",'https:','blob:'],frameSrc:['https://www.youtube-nocookie.com','https://player.vimeo.com']}}}));
  app.use(cors({origin:(origin,cb)=>cb(origin&&!origins.includes(origin)?new Error('Origin not allowed',{cause:403}):null,true)}));
  app.use(express.json({limit:'128kb'}));
  app.use(express.urlencoded({extended:false,limit:'128kb'}));

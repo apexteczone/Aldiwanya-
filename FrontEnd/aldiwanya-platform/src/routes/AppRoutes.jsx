@@ -16,7 +16,6 @@ import PasswordPage from '../pages/auth/PasswordPage';
 import CourseDetailsPage from '../pages/courses/CourseDetailsPage';
 import AdminGuard from '../components/common/AdminGuard';
 const LessonsManagementPage=lazy(()=>import('../pages/admin/LessonsManagementPage'));
-const PlansManagementPage=lazy(()=>import('../pages/admin/PlansManagementPage'));
 import { AdminLayout } from '../layouts/AdminLayout';
 const GradesManager=lazy(()=>import('../pages/admin/GradesManager'));
 const AddGrade=lazy(()=>import('../pages/admin/AddGrade'));
@@ -66,7 +65,7 @@ export default function AppRoutes() {
               
               
               <Route path="lessons" element={<LessonsManagementPage />} />
-              <Route path="plans" element={<PlansManagementPage />} />
+              <Route path="plans" element={<Navigate to="/admin/subscriptions" replace />} />
               <Route path="video" element={<VideosManagementPage />} />
               <Route path="upload" element={<UploadVideoPage />} />
               

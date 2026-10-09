@@ -1,3 +1,4 @@
+import VideoPlayer from '../../components/common/VideoPlayer';
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -335,7 +336,7 @@ function LessonPlayer({
       {video ? (
         <>
           <div className="video-stage">
-            <video
+            <VideoPlayer
               key={video._id}
               controls
               playsInline
@@ -349,8 +350,8 @@ function LessonPlayer({
                 )
               }
             >
-              <track kind="captions" />
-            </video>
+
+            </VideoPlayer>
           </div>
           <div className="video-title">
             <h3>{video.title}</h3>

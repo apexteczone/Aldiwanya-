@@ -5,6 +5,7 @@ export const planIdSchema = joi.object({
 });
 
 export const createPlanSchema = joi.object({
+  description: joi.string().max(1000).allow(''),
   title: joi
     .string()
     .min(2)
@@ -13,7 +14,7 @@ export const createPlanSchema = joi.object({
 
   durationMonths: joi
     .number()
-    .valid(1, 3, 12)
+    .valid(1, 3, 6, 12)
     .required(),
 
   amountMinor: joi
@@ -35,6 +36,7 @@ export const createPlanSchema = joi.object({
 
 export const updatePlanSchema = joi
   .object({
+    description: joi.string().max(1000).allow(''),
     title: joi
       .string()
       .min(2)
