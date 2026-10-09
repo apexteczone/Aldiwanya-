@@ -2559,6 +2559,17 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+.platform .grades-section { scroll-margin-top: 100px; }
+.platform .grades-intro { color: var(--muted, #64809c); margin: 10px 0 24px; }
+.platform .grade-card { display: flex; flex-direction: column; gap: 14px; padding: 26px; min-width: 0; transition: border-color .2s, transform .2s; }
+.platform .grade-card:hover { border-color: #168bea; transform: translateY(-3px); }
+.platform .grade-card:focus-visible { outline: 3px solid #168bea; outline-offset: 4px; }
+.platform .grade-card h3, .platform .grade-card p { margin: 0; overflow-wrap: anywhere; }
+.platform .grade-card p { color: #64809c; }
+.platform .grade-icon { display: grid; place-items: center; width: 64px; height: 64px; color: #126cba; background: #e8f4ff; border-radius: 18px; }
+.platform .grade-action { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #126cba; margin-top: auto; padding-top: 12px; }
+.platform .catalog-breadcrumb { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; font-size: 14px; }
+.platform .catalog-breadcrumb a { color: #a9daff; text-decoration: underline; text-underline-offset: 4px; }
 @media (prefers-reduced-motion: reduce) {
   .platform * {
     animation: none !important;

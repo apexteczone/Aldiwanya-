@@ -2,6 +2,11 @@ import mongoose from 'mongoose';
 import Course from '../../DB/models/Course.js';
 import Module from '../../DB/models/Module.js';
 import Lesson from '../../DB/models/Lesson.js';
+import Grade from '../../DB/models/Grade.js';
+export async function getPublicGrades(req,res) {
+ const grades=await Grade.find({status:'active'}).select('name description position').sort({position:1,name:1,_id:1}).lean();
+ res.json({success:true,data:grades});
+}
 export const visibleCourse={status:{$in:['published','active']}};
 const valid=id=>{if(!mongoose.isValidObjectId(id)) throw new Error('Content not found',{cause:404});};
 export async function getPublishedCourses(req,res) {

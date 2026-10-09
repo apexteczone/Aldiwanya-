@@ -5,6 +5,7 @@ import {
   CreditCard,
   FileText,
   Globe,
+  GraduationCap,
   PlayCircle,
   Users,
 } from "lucide-react";
@@ -21,7 +22,8 @@ import {
   VideoCard,
 } from "../../components/common/PlatformUI";
 export default function HomePage() {
-  const courses = useResource("/courses"),
+  const grades = useResource("/grades"),
+    courses = useResource("/courses"),
     pdfs = useResource("/library/pdfs"),
     plans = useResource("/plan/getActivePlans"),
     videos = useResource("/previews");
@@ -39,10 +41,10 @@ export default function HomePage() {
           محتوى تعليمي مسجل، مع الوصول المجاني إلى المكتبة والمذكرات التعليمية.
         </p>
         <div className="hero-actions">
-          <Link className="site-button" to="/register">
-            ابدأ الآن
+          <a className="site-button" href="#grades">
+            استعرض الصفوف
             <ArrowLeft size={18} />
-          </Link>
+          </a>
           <Link className="site-button outline" to="/previews">
             <PlayCircle size={18} />
             جرّب المحتوى المجاني
@@ -64,6 +66,24 @@ export default function HomePage() {
           </div>
         ))}
       </div>
+      <section id="grades" aria-labelledby="grades-title" className="site-container section grades-section">
+        <h2 id="grades-title">الصفوف الدراسية</h2>
+        <p className="grades-intro">اختر صفك الدراسي، ثم استكشف الكورسات والدروس المتاحة قبل تسجيل الدخول.</p>
+        <ResourceState resource={grades}>
+          {grades.data?.length ? (
+            <div className="card-grid four">
+              {grades.data.map((grade) => (
+                <Link key={grade._id} className="site-panel grade-card" to={`/courses?grade=${grade._id}`}>
+                  <span className="grade-icon"><GraduationCap size={32} /></span>
+                  <h3>{grade.name}</h3>
+                  {grade.description && <p>{grade.description}</p>}
+                  <span className="grade-action">عرض الكورسات <ArrowLeft size={18} /></span>
+                </Link>
+              ))}
+            </div>
+          ) : <Empty icon={GraduationCap}>لا توجد صفوف متاحة حاليًا.</Empty>}
+        </ResourceState>
+      </section>
       <section className="site-container section">
         <SectionTitle
           title="أحدث الدورات"

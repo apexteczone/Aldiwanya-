@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { BookOpen, Grid2X2, List, RotateCcw, Search } from "lucide-react";
 import useResource from "../../hooks/useResource";
 import {
@@ -12,6 +12,7 @@ import {
 } from "../../components/common/PlatformUI";
 export default function CoursesPage() {
   const resource = useResource("/courses"),
+    gradeResource = useResource("/grades"),
     [params, setParams] = useSearchParams();
   const query = params.get("q") || "",
     grade = params.get("grade") || "",
@@ -19,12 +20,9 @@ export default function CoursesPage() {
     sort = params.get("sort") || "newest";
   const [list, setList] = useState(false);
   const courses = resource.data || [],
-    grades = [
-      ...new Map(
-        courses.filter((c) => c.grade).map((c) => [c.grade._id, c.grade]),
-      ).values(),
-    ],
+    grades = gradeResource.data || [],
     subjects = [...new Set(courses.map((c) => c.subject).filter(Boolean))];
+  const selectedGrade = grades.find((g) => g._id === grade);
   const filtered = courses
     .filter(
       (c) =>
@@ -50,10 +48,11 @@ export default function CoursesPage() {
   return (
     <>
       <Hero
-        title="المحتوى التعليمي"
-        subtitle="اكتشف عالمًا من المعرفة مع دوراتنا التعليمية المسجلة"
+        title={selectedGrade ? selectedGrade.name : "المحتوى التعليمي"}
+        subtitle={selectedGrade ? "استعرض كورسات الصف واختر كورسًا للاطلاع على دروسه" : "اكتشف عالمًا من المعرفة مع دوراتنا التعليمية المسجلة"}
         compact
       >
+        <nav aria-label="مسار التصفح" className="catalog-breadcrumb"><Link to="/#grades">الصفوف الدراسية</Link><span> / </span><span>{selectedGrade?.name || "جميع الدورات"}</span></nav>
         <div className="hero-features">
           <span>
             <BookOpen />
@@ -67,7 +66,7 @@ export default function CoursesPage() {
         <div className="catalog-main">
           <div className="catalog-toolbar">
             <div>
-              <h2>جميع الدورات</h2>
+              <h2>{selectedGrade ? `كورسات ${selectedGrade.name}` : "جميع الدورات"}</h2>
               <p>{filtered.length} دورة متاحة</p>
             </div>
             <div className="toolbar-options">
@@ -104,7 +103,9 @@ export default function CoursesPage() {
               </div>
             ) : (
               <Empty>
-                {courses.length
+                {grade && !query && !subject
+                  ? "لا توجد كورسات منشورة لهذا الصف بعد."
+                  : courses.length
                   ? "لا توجد دورات تطابق البحث."
                   : "لا توجد دورات منشورة بعد."}
               </Empty>
@@ -137,7 +138,7 @@ export default function CoursesPage() {
           >
             الكل<span>{courses.length}</span>
           </button>
-          {grades.map((g) => (
+          <ResourceState resource={gradeResource}>{grades.map((g) => (
             <button
               key={g._id}
               className={
@@ -150,7 +151,7 @@ export default function CoursesPage() {
                 {courses.filter((c) => c.grade?._id === g._id).length}
               </span>
             </button>
-          ))}
+          ))}</ResourceState>
           <h3>المواد التعليمية</h3>
           <select
             aria-label="المادة التعليمية"

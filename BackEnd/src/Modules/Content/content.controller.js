@@ -3,12 +3,14 @@ import Router from "express";
 import asyncHandler from "../../utils/errorHandling/asyncHandler.js";
 
 import {
+  getPublicGrades,
   getPublishedCourses,
   getPublishedCourseById,
   getPublishedLessonById,
 } from "./content.service.js";
 
 const router = Router();
+router.get('/grades', asyncHandler(getPublicGrades));
 
 router.get(
   "/courses",

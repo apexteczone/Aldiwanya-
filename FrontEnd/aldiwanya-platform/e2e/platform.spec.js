@@ -83,6 +83,8 @@ test("dashboard publishing produces public courses, plans, free video and PDFs",
     name: "صف اختبار آلي",
     status: "active",
   });
+  const emptyGrade = await create("/admin/grades/create", { name: "صف بدون كورسات", status: "active" });
+  await create("/admin/grades/create", { name: "صف غير متاح", status: "inactive" });
   const course = await create("/admin/courses", {
     title: "كورس اختبار الربط",
     description: "محتوى مؤقت داخل قاعدة الاختبار فقط.",
@@ -91,12 +93,14 @@ test("dashboard publishing produces public courses, plans, free video and PDFs",
     status: "published",
   });
   courseId = course._id;
+  await create("/admin/courses", { title: "كورس غير منشور", grade: grade._id, subject: "مادة اختبار", status: "draft" });
   const lesson = await create("/admin/lessons", {
     title: "درس اختبار منشور",
     courseId,
     status: "published",
   });
   lessonId = lesson._id;
+  await create("/admin/lessons", { title: "درس غير منشور", courseId, status: "draft" });
   await create("/admin/videos", {
     title: "معاينة اختبار مجانية",
     lessonId,
@@ -125,6 +129,29 @@ test("dashboard publishing produces public courses, plans, free video and PDFs",
     },
   });
   expect(pdf.ok(), await pdf.text()).toBe(true);
+  await page.goto("/");
+  await expect(page.getByRole("heading", {name:"صف بدون كورسات",exact:true})).toBeVisible();
+  await expect(page.getByText("صف غير متاح", {exact:true})).toHaveCount(0);
+  await screenshot(page, info, "home-public-grades");
+  await page.setViewportSize({width:390,height:844});
+  await screenshot(page, info, "home-public-grades-mobile");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  await page.getByRole("link", {name:/صف بدون كورسات/}).click();
+  await expect(page).toHaveURL(new RegExp("grade=" + emptyGrade._id));
+  await expect(page.getByText("لا توجد كورسات منشورة لهذا الصف بعد.")).toBeVisible();
+  await page.getByRole("navigation", {name:"مسار التصفح"}).getByRole("link", {name:"الصفوف الدراسية"}).click();
+  await page.getByRole("link", {name:/صف اختبار آلي/}).click();
+  await expect(page.locator("h1")).toHaveText("صف اختبار آلي");
+  await expect(page.getByText("كورس غير منشور", {exact:true})).toHaveCount(0);
+  await page.getByRole("heading", {name:"كورس اختبار الربط",exact:true}).click();
+  await expect(page).toHaveURL(new RegExp("/courses/" + courseId));
+  await expect(page.getByRole("button", {name:"درس اختبار منشور",exact:true})).toBeVisible();
+  await expect(page.getByText("درس غير منشور", {exact:true})).toHaveCount(0);
+  await page.getByRole("button", {name:"درس اختبار منشور",exact:true}).click();
+  await expect(page).toHaveURL(new RegExp("lesson=" + lessonId));
+  await page.reload();
+  await expect(page.getByRole("heading", {name:"درس اختبار منشور",exact:true})).toBeVisible();
+  await page.setViewportSize({width:1440,height:1000});
   await page.goto("/courses");
   await expect(
     page.getByRole("heading", { name: "كورس اختبار الربط", exact: true }),
