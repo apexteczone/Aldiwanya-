@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import axios from '../../../../services/api'; 
 import logo from '/src/assets/whitelogo.png';
 import footerImage from '/src/assets/kiwait.png';
@@ -19,6 +19,7 @@ import {
 
 export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
   const navigate = useNavigate();
+  const {pathname} = useLocation();
 
   const menuItems = [
     { title: 'الرئيسية', icon: Home, path: '/admin/dashboard' },
@@ -103,7 +104,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
                     onClick={handleNavClick}
                     className={({ isActive }) =>
                       `w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                        isActive
+                        (isActive || (item.path === '/admin/video' && pathname === '/admin/upload'))
                           ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
                           : 'text-text-muted hover:bg-navy-900/80 hover:text-white'
                       }`

@@ -14,6 +14,9 @@ async function login(page, email, password) {
   await page.getByRole("button", { name: "تسجيل الدخول", exact: true }).click();
 }
 async function screenshot(page, info, name) {
+  if (new URL(page.url()).pathname.startsWith('/admin/')) {
+    await page.locator('main').first().evaluate(el => el.scrollTo({top:0,behavior:'instant'}));
+  }
   await page.screenshot({
     path: info.outputPath(name + ".png"),
     fullPage: true,
@@ -284,6 +287,7 @@ test("registration, playback, favorites, progress and profile persist through th
 
 test('admin reference pages save lessons, video thumbnails and subscription plans',async({page,request},info)=>{
  test.setTimeout(90000);
+ await page.setViewportSize({width:1536,height:1200});
  await login(page,'admin@example.com','AldiwanyaLocal!2026');
  await expect(page).toHaveURL(/\/admin\/dashboard$/);
  await page.goto('/admin/lessons');
@@ -311,7 +315,7 @@ test('admin reference pages save lessons, video thumbnails and subscription plan
  await page.getByLabel('عنوان الفيديو',{exact:true}).fill('فيديو تصميم الإدارة');
  await page.getByLabel('رابط الفيديو',{exact:true}).fill('https://media.example.test/flower.mp4');
  await page.getByLabel('وصف الفيديو',{exact:true}).fill('وصف الفيديو من لوحة الإدارة.');
- await page.getByLabel('صورة مصغرة للفيديو',{exact:true}).setInputFiles({name:'thumbnail.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aXioAAAAASUVORK5CYII=','base64')});
+ await page.getByLabel('صورة مصغرة للفيديو',{exact:true}).setInputFiles({name:'thumbnail.png',mimeType:'image/png',buffer:await readFile(fileURLToPath(new URL('../public/diwaniya-majlis.png',import.meta.url)))});
  await page.getByText('إعدادات النشر والوصول',{exact:true}).click();
  await page.getByLabel('وصول الفيديو',{exact:true}).selectOption('free');
  await page.getByLabel('حالة الفيديو',{exact:true}).selectOption('published');
@@ -322,6 +326,7 @@ test('admin reference pages save lessons, video thumbnails and subscription plan
  await expect(page.getByLabel('وصف الفيديو',{exact:true})).toHaveValue('وصف الفيديو من لوحة الإدارة.');
  await page.locator('video').evaluate(v=>v.play());
  await expect.poll(()=>page.locator('video').evaluate(v=>v.currentTime)).toBeGreaterThan(0);
+ await page.getByText('إعدادات النشر والوصول',{exact:true}).click();
  await screenshot(page,info,'admin-reference-video');
  await page.getByRole('button',{name:'إلغاء',exact:true}).click();
  await page.getByLabel('رابط الفيديو',{exact:true}).fill('https://youtu.be/dQw4w9WgXcQ');
@@ -358,3 +363,4 @@ test('admin reference pages save lessons, video thumbnails and subscription plan
    await screenshot(page,info,'admin-reference-mobile-'+route);
  }
 });
+
