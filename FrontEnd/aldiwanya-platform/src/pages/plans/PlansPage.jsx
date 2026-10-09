@@ -1,11 +1,179 @@
-import {useState} from 'react';
-import {Link,useSearchParams} from 'react-router-dom';
-import {BookOpen, Check, Crown, FileText, LockKeyhole, PlayCircle, ShieldCheck, ShoppingCart, User} from 'lucide-react';
-import useResource from '../../hooks/useResource';
-import {price} from '../../utils/platform';
-import {Empty, Hero, PlanCard, ResourceState} from '../../components/common/PlatformUI';
+import { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import {
+  BookOpen,
+  Check,
+  Crown,
+  FileText,
+  LockKeyhole,
+  PlayCircle,
+  ShieldCheck,
+  ShoppingCart,
+  User,
+} from "lucide-react";
+import useResource from "../../hooks/useResource";
+import { price } from "../../utils/platform";
+import {
+  Empty,
+  Hero,
+  PlanCard,
+  ResourceState,
+} from "../../components/common/PlatformUI";
 export default function PlansPage() {
- const resource=useResource('/plan/getActivePlans'),[params]=useSearchParams(),[selected,setSelected]=useState(params.get('plan')||'');
- const plan=resource.data?.find(p=>p._id===selected);
- return <><Hero title="اختر خطتك المناسبة" subtitle="ابدأ رحلتك التعليمية وكن جزءًا من مجتمع الديوانية" compact><div className="hero-features"><span><BookOpen/>محتوى تعليمي</span><span><PlayCircle/>دروس مسجلة</span><span><FileText/>مكتبة مجانية</span></div></Hero><section className="site-container plans-layout section"><aside><div className="site-panel order-summary"><h2><ShoppingCart/>ملخص الطلب</h2>{plan?<><div className="summary-row"><Crown/><span>{plan.title}</span><b>{price(plan)}</b></div><div className="soft-panel summary-row"><strong>الإجمالي</strong><strong>{price(plan)}</strong></div></>:<p>اختر خطة لعرض تفاصيلها.</p>}<button className="site-button full" disabled><LockKeyhole size={17}/>متابعة الدفع</button><p role="status">الدفع غير متاح حاليًا. سيُتاح بعد اكتمال الربط مع ماي فاتورة.</p></div><div className="site-panel"><h3>مميزات الاشتراك</h3><ul className="feature-list"><li><BookOpen/>الوصول إلى المحتوى المشمول بالخطة</li><li><PlayCircle/>مشاهدة الدروس المسجلة</li><li><FileText/>المكتبة المجانية متاحة للجميع</li></ul></div><div className="soft-panel"><h3>تجربة مجانية قبل الاشتراك</h3><p>شاهد المعاينات المجانية المنشورة.</p><Link className="site-button full" to="/previews">جرّب الآن<PlayCircle size={18}/></Link></div><div className="site-panel"><h3>المواد التعليمية المجانية</h3><Link to="/library" className="site-button light full">استكشف المكتبة<FileText size={18}/></Link></div></aside><div className="site-panel plans-main"><h2>خطط الاشتراك</h2><p>اختر الخطة الأنسب لرحلتك التعليمية</p><ResourceState resource={resource}>{resource.data?.length?<div className="card-grid plan-grid">{resource.data.map(p=><PlanCard key={p._id} plan={p} selected={selected===p._id} onSelect={setSelected}/>)}</div>:<Empty>لا توجد خطط اشتراك متاحة حاليًا.</Empty>}</ResourceState><section className="subscription-steps"><h2>خطوات الاشتراك</h2><div>{[[Crown,'اختر الخطة المناسبة'],[User,'سجّل الدخول'],[LockKeyhole,'الدفع عند إتاحته'],[Check,'تفعيل الاشتراك بعد التحقق']].map(([Icon,title],i)=><div key={title}><Icon/><b>{i+1}</b><p>{title}</p></div>)}</div></section><div className="payment-notice"><ShieldCheck size={55}/><div><h2>ماي فاتورة</h2><p>جاري تجهيز خدمة الدفع. لا يتم تحصيل أي مبالغ حاليًا.</p></div></div><h2>أسئلة شائعة</h2>{[['هل يمكنني تحميل المذكرات بدون اشتراك؟','نعم، المكتبة المجانية متاحة للجميع بدون تسجيل دخول.'],['كيف أجرّب المحتوى قبل الاشتراك؟','يمكنك مشاهدة الفيديوهات المنشورة كمعاينات مجانية من صفحة جرّب قبل أن تشترك.'],['هل الدفع متاح الآن؟','الدفع متوقف مؤقتًا لحين اكتمال الربط مع ماي فاتورة.']].map(([q,a])=><details className="faq" key={q}><summary>{q}</summary><p>{a}</p></details>)}</div></section></>;
+  const resource = useResource("/plan/getActivePlans"),
+    [params] = useSearchParams(),
+    [selected, setSelected] = useState(params.get("plan") || "");
+  const plan = resource.data?.find((p) => p._id === selected);
+  return (
+    <>
+      <Hero
+        title="اختر خطتك المناسبة"
+        subtitle="ابدأ رحلتك التعليمية وكن جزءًا من مجتمع الديوانية"
+        compact
+      >
+        <div className="hero-features">
+          <span>
+            <BookOpen />
+            محتوى تعليمي
+          </span>
+          <span>
+            <PlayCircle />
+            دروس مسجلة
+          </span>
+          <span>
+            <FileText />
+            مكتبة مجانية
+          </span>
+        </div>
+      </Hero>
+      <section className="site-container plans-layout section">
+        <aside>
+          <div className="site-panel order-summary">
+            <h2>
+              <ShoppingCart />
+              ملخص الطلب
+            </h2>
+            {plan ? (
+              <>
+                <div className="summary-row">
+                  <Crown />
+                  <span>{plan.title}</span>
+                  <b>{price(plan)}</b>
+                </div>
+                <div className="soft-panel summary-row">
+                  <strong>الإجمالي</strong>
+                  <strong>{price(plan)}</strong>
+                </div>
+              </>
+            ) : (
+              <p>اختر خطة لعرض تفاصيلها.</p>
+            )}
+            <button className="site-button full" disabled>
+              <LockKeyhole size={17} />
+              متابعة الدفع
+            </button>
+            <p role="status">
+              الدفع غير متاح حاليًا. سيُتاح بعد اكتمال الربط مع ماي فاتورة.
+            </p>
+          </div>
+          <div className="site-panel">
+            <h3>مميزات الاشتراك</h3>
+            <ul className="feature-list">
+              <li>
+                <BookOpen />
+                الوصول إلى المحتوى المشمول بالخطة
+              </li>
+              <li>
+                <PlayCircle />
+                مشاهدة الدروس المسجلة
+              </li>
+              <li>
+                <FileText />
+                المكتبة المجانية متاحة للجميع
+              </li>
+            </ul>
+          </div>
+          <div className="soft-panel">
+            <h3>تجربة مجانية قبل الاشتراك</h3>
+            <p>شاهد المعاينات المجانية المنشورة.</p>
+            <Link className="site-button full" to="/previews">
+              جرّب الآن
+              <PlayCircle size={18} />
+            </Link>
+          </div>
+          <div className="site-panel">
+            <h3>المواد التعليمية المجانية</h3>
+            <Link to="/library" className="site-button light full">
+              استكشف المكتبة
+              <FileText size={18} />
+            </Link>
+          </div>
+        </aside>
+        <div className="site-panel plans-main">
+          <h2>خطط الاشتراك</h2>
+          <p>اختر الخطة الأنسب لرحلتك التعليمية</p>
+          <ResourceState resource={resource}>
+            {resource.data?.length ? (
+              <div className="card-grid plan-grid">
+                {resource.data.map((p) => (
+                  <PlanCard
+                    key={p._id}
+                    plan={p}
+                    selected={selected === p._id}
+                    onSelect={setSelected}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Empty>لا توجد خطط اشتراك متاحة حاليًا.</Empty>
+            )}
+          </ResourceState>
+          <section className="subscription-steps">
+            <h2>خطوات الاشتراك</h2>
+            <div>
+              {[
+                [Crown, "اختر الخطة المناسبة"],
+                [User, "سجّل الدخول"],
+                [LockKeyhole, "الدفع عند إتاحته"],
+                [Check, "تفعيل الاشتراك بعد التحقق"],
+              ].map(([Icon, title], i) => (
+                <div key={title}>
+                  <Icon />
+                  <b>{i + 1}</b>
+                  <p>{title}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+          <div className="payment-notice">
+            <ShieldCheck size={55} />
+            <div>
+              <h2>ماي فاتورة</h2>
+              <p>جاري تجهيز خدمة الدفع. لا يتم تحصيل أي مبالغ حاليًا.</p>
+            </div>
+          </div>
+          <h2>أسئلة شائعة</h2>
+          {[
+            [
+              "هل يمكنني تحميل المذكرات بدون اشتراك؟",
+              "نعم، المكتبة المجانية متاحة للجميع بدون تسجيل دخول.",
+            ],
+            [
+              "كيف أجرّب المحتوى قبل الاشتراك؟",
+              "يمكنك مشاهدة الفيديوهات المنشورة كمعاينات مجانية من صفحة جرّب قبل أن تشترك.",
+            ],
+            [
+              "هل الدفع متاح الآن؟",
+              "الدفع متوقف مؤقتًا لحين اكتمال الربط مع ماي فاتورة.",
+            ],
+          ].map(([q, a]) => (
+            <details className="faq" key={q}>
+              <summary>{q}</summary>
+              <p>{a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+    </>
+  );
 }

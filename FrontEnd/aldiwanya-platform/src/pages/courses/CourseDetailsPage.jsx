@@ -1,30 +1,424 @@
-import {useEffect,useRef,useState} from 'react';
-import {Link,useParams,useSearchParams} from 'react-router-dom';
-import {BookOpen,CheckCircle,Crown,Heart,LockKeyhole,PlayCircle} from 'lucide-react';
-import useResource from '../../hooks/useResource';
-import usePlatform from '../../hooks/usePlatform';
-import api from '../../services/api';
-import {assetUrl,errorMessage} from '../../utils/platform';
-import {Empty,Hero,LockedContent,ResourceState} from '../../components/common/PlatformUI';
-export default function CourseDetailsPage({preview=false}) {
- const {id}=useParams(),resource=useResource('/courses/'+id);
- return <ResourceState resource={resource}>{resource.data&&<CourseView key={id+preview} course={resource.data} preview={preview}/>}</ResourceState>;
+import { useEffect, useRef, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import {
+  BookOpen,
+  CheckCircle,
+  Crown,
+  Heart,
+  LockKeyhole,
+  PlayCircle,
+} from "lucide-react";
+import useResource from "../../hooks/useResource";
+import usePlatform from "../../hooks/usePlatform";
+import api from "../../services/api";
+import { assetUrl, errorMessage } from "../../utils/platform";
+import {
+  Empty,
+  Hero,
+  LockedContent,
+  ResourceState,
+} from "../../components/common/PlatformUI";
+export default function CourseDetailsPage({ preview = false }) {
+  const { id } = useParams(),
+    resource = useResource("/courses/" + id);
+  return (
+    <ResourceState resource={resource}>
+      {resource.data && (
+        <CourseView
+          key={id + preview}
+          course={resource.data}
+          preview={preview}
+        />
+      )}
+    </ResourceState>
+  );
 }
-function CourseView({course,preview}) {
- const {profile}=usePlatform(),[params,setParams]=useSearchParams(),[tab,setTab]=useState('intro');
- const [activity,setActivity]=useState(null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
- const lessons=course.lessons||[],lesson=lessons.find(l=>l._id===params.get('lesson'))||lessons[0];
- useEffect(()=>{if(!profile)return;let live=true;api.get('/student/activity').then(r=>{if(live)setActivity(r.data.data);}).catch(e=>{if(live)setMessage(errorMessage(e));});return()=>{live=false;};},[profile]);
- async function markComplete(){if(!lesson)return;setBusy(true);setMessage('');try{await api.patch('/student/activity',{kind:'complete',id:lesson._id,enabled:!activity?.completedLessons.some(l=>l._id===lesson._id)});setActivity((await api.get('/student/activity')).data.data);}catch(e){setMessage(errorMessage(e));}finally{setBusy(false);}}
- const selected=(id)=>{const next=new URLSearchParams(params);next.set('lesson',id);next.delete('video');setParams(next);};
- const lessonList=rows=>rows.map(l=><button className={`lesson-choice ${lesson?._id===l._id?'active':''}`} key={l._id} onClick={()=>selected(l._id)}><PlayCircle size={17}/><span>{l.title}</span>{activity?.completedLessons.some(done=>done._id===l._id)&&<CheckCircle size={17}/>}</button>);
- return <><Hero title={preview?'جرّب قبل أن تشترك':course.title} subtitle={preview?'شاهد المحتوى المنشور كمعاينة مجانية':course.description} compact><div className="hero-features"><span><BookOpen/>{lessons.length} درس</span>{course.durationHours>0&&<span>{course.durationHours} ساعة</span>}<span>{course.grade?.name}</span></div></Hero><section className={`site-container course-layout section ${preview?'preview-layout':''}`}><aside className="course-sidebar"><div className="site-panel course-summary">{assetUrl(course.coverImage||course.thumbnail)?<img src={assetUrl(course.coverImage||course.thumbnail)} alt={course.title}/>:<div className="cover-placeholder"><BookOpen size={60}/></div>}<h2>{course.title}</h2><p>{course.subject}</p><div className="course-stats"><span><BookOpen/>{lessons.length} درس</span>{course.durationHours>0&&<span>{course.durationHours} ساعة</span>}</div><Link className="site-button full" to="/plans"><Crown size={17}/>عرض الاشتراكات</Link></div><div className="soft-panel"><h3>محتوى مجاني متاح</h3><p>جرّب المعاينات المنشورة قبل الاشتراك.</p><Link to={`/courses/${course._id}/preview`} className="site-button light full">مشاهدة المحتوى التجريبي<PlayCircle size={17}/></Link></div>{preview&&<div className="site-panel"><h3>محتويات الكورس</h3>{lessonList(lessons)}</div>}</aside><div className="site-panel course-player-panel"><h2>{lesson?.title||course.title}</h2>{lesson?<LessonPlayer key={lesson._id+preview} lesson={lesson} courseId={course._id} preview={preview} profile={profile} activity={activity} onActivity={setActivity}/>:<Empty>لم تُنشر دروس لهذا الكورس بعد.</Empty>}{profile&&lesson&&<button className="site-button light" disabled={busy} onClick={markComplete}><CheckCircle size={17}/>{activity?.completedLessons.some(l=>l._id===lesson._id)?'إلغاء تحديد الدرس كمكتمل':'تحديد الدرس كمكتمل'}</button>}{message&&<p role="alert" className="form-error">{message}</p>}{preview?<div className="soft-panel preview-callout"><Crown size={32}/><div><h3>هذه معاينة من المحتوى التعليمي</h3><p>المعاينات المنشورة هنا مجانية. الاشتراك يتيح المحتوى المدفوع.</p></div><Link to="/plans" className="site-button">خطط الاشتراك</Link></div>:<><div className="course-tabs" role="tablist" aria-label="تفاصيل الكورس">{[['intro','مقدمة'],['description','الوصف'],['lessons','الدروس']].map(([key,label])=><button key={key} role="tab" aria-selected={tab===key} onClick={()=>setTab(key)}>{label}</button>)}</div><div className="course-tab-content" role="tabpanel">{tab==='lessons'?lessonList(lessons):<><h3>{tab==='intro'?'مقدمة عن الكورس':'وصف الكورس'}</h3><p>{tab==='intro'?(lesson?.description||course.description||'لم يُضف وصف بعد.'):(course.description||'لم يُضف وصف بعد.')}</p></>}</div></>}</div>{!preview&&<aside className="site-panel lesson-sidebar"><h2>محتويات الكورس</h2>{lessons.length? <>{lessonList(lessons.filter(l=>!l.moduleId))}{course.modules?.map(m=><details className="lesson-group" key={m._id} open><summary>{m.title}<small>{m.lessons.length} درس</small></summary>{lessonList(m.lessons)}</details>)}</>:<Empty>لا توجد دروس منشورة.</Empty>}<div className="soft-panel"><CheckCircle/><p>تابع الدروس وحدّد ما أتممته لحفظ تقدمك.</p></div></aside>}</section></>;
+function CourseView({ course, preview }) {
+  const { profile } = usePlatform(),
+    [params, setParams] = useSearchParams(),
+    [tab, setTab] = useState("intro");
+  const [activity, setActivity] = useState(null),
+    [message, setMessage] = useState(""),
+    [busy, setBusy] = useState(false);
+  const lessons = course.lessons || [],
+    lesson = lessons.find((l) => l._id === params.get("lesson")) || lessons[0];
+  useEffect(() => {
+    if (!profile) return;
+    let live = true;
+    api
+      .get("/student/activity")
+      .then((r) => {
+        if (live) setActivity(r.data.data);
+      })
+      .catch((e) => {
+        if (live) setMessage(errorMessage(e));
+      });
+    return () => {
+      live = false;
+    };
+  }, [profile]);
+  async function markComplete() {
+    if (!lesson) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      await api.patch("/student/activity", {
+        kind: "complete",
+        id: lesson._id,
+        enabled: !activity?.completedLessons.some((l) => l._id === lesson._id),
+      });
+      setActivity((await api.get("/student/activity")).data.data);
+    } catch (e) {
+      setMessage(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  const selected = (id) => {
+    const next = new URLSearchParams(params);
+    next.set("lesson", id);
+    next.delete("video");
+    setParams(next);
+  };
+  const lessonList = (rows) =>
+    rows.map((l) => (
+      <button
+        className={`lesson-choice ${lesson?._id === l._id ? "active" : ""}`}
+        key={l._id}
+        onClick={() => selected(l._id)}
+      >
+        <PlayCircle size={17} />
+        <span>{l.title}</span>
+        {activity?.completedLessons.some((done) => done._id === l._id) && (
+          <CheckCircle size={17} />
+        )}
+      </button>
+    ));
+  return (
+    <>
+      <Hero
+        title={preview ? "جرّب قبل أن تشترك" : course.title}
+        subtitle={
+          preview ? "شاهد المحتوى المنشور كمعاينة مجانية" : course.description
+        }
+        compact
+      >
+        <div className="hero-features">
+          <span>
+            <BookOpen />
+            {lessons.length} درس
+          </span>
+          {course.durationHours > 0 && <span>{course.durationHours} ساعة</span>}
+          <span>{course.grade?.name}</span>
+        </div>
+      </Hero>
+      <section
+        className={`site-container course-layout section ${preview ? "preview-layout" : ""}`}
+      >
+        <aside className="course-sidebar">
+          <div className="site-panel course-summary">
+            {assetUrl(course.coverImage || course.thumbnail) ? (
+              <img
+                src={assetUrl(course.coverImage || course.thumbnail)}
+                alt={course.title}
+              />
+            ) : (
+              <div className="cover-placeholder">
+                <BookOpen size={60} />
+              </div>
+            )}
+            <h2>{course.title}</h2>
+            <p>{course.subject}</p>
+            <div className="course-stats">
+              <span>
+                <BookOpen />
+                {lessons.length} درس
+              </span>
+              {course.durationHours > 0 && (
+                <span>{course.durationHours} ساعة</span>
+              )}
+            </div>
+            <Link className="site-button full" to="/plans">
+              <Crown size={17} />
+              عرض الاشتراكات
+            </Link>
+          </div>
+          <div className="soft-panel">
+            <h3>محتوى مجاني متاح</h3>
+            <p>جرّب المعاينات المنشورة قبل الاشتراك.</p>
+            <Link
+              to={`/courses/${course._id}/preview`}
+              className="site-button light full"
+            >
+              مشاهدة المحتوى التجريبي
+              <PlayCircle size={17} />
+            </Link>
+          </div>
+          {preview && (
+            <div className="site-panel">
+              <h3>محتويات الكورس</h3>
+              {lessonList(lessons)}
+            </div>
+          )}
+        </aside>
+        <div className="site-panel course-player-panel">
+          <h2>{lesson?.title || course.title}</h2>
+          {lesson ? (
+            <LessonPlayer
+              key={lesson._id + preview}
+              lesson={lesson}
+              courseId={course._id}
+              preview={preview}
+              profile={profile}
+              activity={activity}
+              onActivity={setActivity}
+            />
+          ) : (
+            <Empty>لم تُنشر دروس لهذا الكورس بعد.</Empty>
+          )}
+          {profile && lesson && (
+            <button
+              className="site-button light"
+              disabled={busy}
+              onClick={markComplete}
+            >
+              <CheckCircle size={17} />
+              {activity?.completedLessons.some((l) => l._id === lesson._id)
+                ? "إلغاء تحديد الدرس كمكتمل"
+                : "تحديد الدرس كمكتمل"}
+            </button>
+          )}
+          {message && (
+            <p role="alert" className="form-error">
+              {message}
+            </p>
+          )}
+          {preview ? (
+            <div className="soft-panel preview-callout">
+              <Crown size={32} />
+              <div>
+                <h3>هذه معاينة من المحتوى التعليمي</h3>
+                <p>
+                  المعاينات المنشورة هنا مجانية. الاشتراك يتيح المحتوى المدفوع.
+                </p>
+              </div>
+              <Link to="/plans" className="site-button">
+                خطط الاشتراك
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div
+                className="course-tabs"
+                role="tablist"
+                aria-label="تفاصيل الكورس"
+              >
+                {[
+                  ["intro", "مقدمة"],
+                  ["description", "الوصف"],
+                  ["lessons", "الدروس"],
+                ].map(([key, label]) => (
+                  <button
+                    key={key}
+                    role="tab"
+                    aria-selected={tab === key}
+                    onClick={() => setTab(key)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="course-tab-content" role="tabpanel">
+                {tab === "lessons" ? (
+                  lessonList(lessons)
+                ) : (
+                  <>
+                    <h3>
+                      {tab === "intro" ? "مقدمة عن الكورس" : "وصف الكورس"}
+                    </h3>
+                    <p>
+                      {tab === "intro"
+                        ? lesson?.description ||
+                          course.description ||
+                          "لم يُضف وصف بعد."
+                        : course.description || "لم يُضف وصف بعد."}
+                    </p>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+        {!preview && (
+          <aside className="site-panel lesson-sidebar">
+            <h2>محتويات الكورس</h2>
+            {lessons.length ? (
+              <>
+                {lessonList(lessons.filter((l) => !l.moduleId))}
+                {course.modules?.map((m) => (
+                  <details className="lesson-group" key={m._id} open>
+                    <summary>
+                      {m.title}
+                      <small>{m.lessons.length} درس</small>
+                    </summary>
+                    {lessonList(m.lessons)}
+                  </details>
+                ))}
+              </>
+            ) : (
+              <Empty>لا توجد دروس منشورة.</Empty>
+            )}
+            <div className="soft-panel">
+              <CheckCircle />
+              <p>تابع الدروس وحدّد ما أتممته لحفظ تقدمك.</p>
+            </div>
+          </aside>
+        )}
+      </section>
+    </>
+  );
 }
-function LessonPlayer({lesson,courseId,preview,profile,activity,onActivity}) {
- const resource=useResource('/library/lessons/'+lesson._id+'/videos'),[params,setParams]=useSearchParams(),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
- const started=useRef(false);
- async function recordStart(){if(!profile||started.current)return;started.current=true;try{await api.patch('/student/activity',{kind:'start',id:courseId,enabled:true});}catch(e){started.current=false;setMessage(errorMessage(e));}}
- const videos=(resource.data||[]).filter(v=>!preview||v.accessLevel==='free'),video=videos.find(v=>v._id===params.get('video'))||videos[0];
- async function favorite(){setBusy(true);setMessage('');try{await api.patch('/student/activity',{kind:'favorite',id:video._id,enabled:!activity?.favoriteVideos.some(v=>v._id===video._id)});onActivity((await api.get('/student/activity')).data.data);}catch(e){setMessage(errorMessage(e));}finally{setBusy(false);}}
- return <ResourceState resource={resource}>{video?<><div className="video-stage"><video key={video._id} controls playsInline onPlay={recordStart} preload="metadata" poster={assetUrl(video.thumbnailUrl)||undefined} src={assetUrl(video.videoUrl)} onError={()=>setMessage('تعذر تشغيل الفيديو. تأكد من أن رابط الفيديو ملف قابل للتشغيل ومتاح.')}><track kind="captions"/></video></div><div className="video-title"><h3>{video.title}</h3>{profile?<button className="icon-button" disabled={busy} aria-label={activity?.favoriteVideos.some(v=>v._id===video._id)?'إزالة من المفضلة':'إضافة إلى المفضلة'} onClick={favorite}><Heart fill={activity?.favoriteVideos.some(v=>v._id===video._id)?'currentColor':'none'} size={21}/></button>:<Link to="/login">سجّل الدخول لحفظ المفضلة</Link>}</div>{videos.length>1&&<div className="video-options">{videos.map(v=><button className={video._id===v._id?'active':''} key={v._id} onClick={()=>{const next=new URLSearchParams(params);next.set('video',v._id);setParams(next);setMessage('');}}><PlayCircle size={16}/>{v.title}</button>)}</div>}{message&&<p role="alert" className="form-error">{message}</p>}</>:preview?<Empty icon={PlayCircle}>لا توجد معاينة مجانية منشورة لهذا الدرس.</Empty>:profile?<LockedContent/>:<div className="site-empty"><LockKeyhole size={42}/><h3>لا توجد فيديوهات مجانية متاحة لهذا الدرس</h3><Link to={'/login?next='+encodeURIComponent(location.pathname+location.search)} className="site-button">تسجيل الدخول لعرض محتواك</Link></div>}</ResourceState>;
+function LessonPlayer({
+  lesson,
+  courseId,
+  preview,
+  profile,
+  activity,
+  onActivity,
+}) {
+  const resource = useResource("/library/lessons/" + lesson._id + "/videos"),
+    [params, setParams] = useSearchParams(),
+    [message, setMessage] = useState(""),
+    [busy, setBusy] = useState(false);
+  const started = useRef(false);
+  async function recordStart() {
+    if (!profile || started.current) return;
+    started.current = true;
+    try {
+      await api.patch("/student/activity", {
+        kind: "start",
+        id: courseId,
+        enabled: true,
+      });
+    } catch (e) {
+      started.current = false;
+      setMessage(errorMessage(e));
+    }
+  }
+  const videos = (resource.data || []).filter(
+      (v) => !preview || v.accessLevel === "free",
+    ),
+    video = videos.find((v) => v._id === params.get("video")) || videos[0];
+  async function favorite() {
+    setBusy(true);
+    setMessage("");
+    try {
+      await api.patch("/student/activity", {
+        kind: "favorite",
+        id: video._id,
+        enabled: !activity?.favoriteVideos.some((v) => v._id === video._id),
+      });
+      onActivity((await api.get("/student/activity")).data.data);
+    } catch (e) {
+      setMessage(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <ResourceState resource={resource}>
+      {video ? (
+        <>
+          <div className="video-stage">
+            <video
+              key={video._id}
+              controls
+              playsInline
+              onPlay={recordStart}
+              preload="metadata"
+              poster={assetUrl(video.thumbnailUrl) || undefined}
+              src={assetUrl(video.videoUrl)}
+              onError={() =>
+                setMessage(
+                  "تعذر تشغيل الفيديو. تأكد من أن رابط الفيديو ملف قابل للتشغيل ومتاح.",
+                )
+              }
+            >
+              <track kind="captions" />
+            </video>
+          </div>
+          <div className="video-title">
+            <h3>{video.title}</h3>
+            {profile ? (
+              <button
+                className="icon-button"
+                disabled={busy}
+                aria-label={
+                  activity?.favoriteVideos.some((v) => v._id === video._id)
+                    ? "إزالة من المفضلة"
+                    : "إضافة إلى المفضلة"
+                }
+                onClick={favorite}
+              >
+                <Heart
+                  fill={
+                    activity?.favoriteVideos.some((v) => v._id === video._id)
+                      ? "currentColor"
+                      : "none"
+                  }
+                  size={21}
+                />
+              </button>
+            ) : (
+              <Link to="/login">سجّل الدخول لحفظ المفضلة</Link>
+            )}
+          </div>
+          {videos.length > 1 && (
+            <div className="video-options">
+              {videos.map((v) => (
+                <button
+                  className={video._id === v._id ? "active" : ""}
+                  key={v._id}
+                  onClick={() => {
+                    const next = new URLSearchParams(params);
+                    next.set("video", v._id);
+                    setParams(next);
+                    setMessage("");
+                  }}
+                >
+                  <PlayCircle size={16} />
+                  {v.title}
+                </button>
+              ))}
+            </div>
+          )}
+          {message && (
+            <p role="alert" className="form-error">
+              {message}
+            </p>
+          )}
+        </>
+      ) : preview ? (
+        <Empty icon={PlayCircle}>
+          لا توجد معاينة مجانية منشورة لهذا الدرس.
+        </Empty>
+      ) : profile ? (
+        <LockedContent />
+      ) : (
+        <div className="site-empty">
+          <LockKeyhole size={42} />
+          <h3>لا توجد فيديوهات مجانية متاحة لهذا الدرس</h3>
+          <Link
+            to={
+              "/login?next=" +
+              encodeURIComponent(location.pathname + location.search)
+            }
+            className="site-button"
+          >
+            تسجيل الدخول لعرض محتواك
+          </Link>
+        </div>
+      )}
+    </ResourceState>
+  );
 }

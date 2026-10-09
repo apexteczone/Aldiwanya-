@@ -41,6 +41,13 @@ warm lamps, dark navy negative space on the left; no text, logos or people."
 Kuwait skyline and existing main logo assets are reused. Cairo license is in
 `public/Cairo-OFL.txt`.
 
+Two additional transparent decorative assets were generated with the same built-in
+tool: `public/learning-books.png` (prompt: "Navy hardcover textbooks, one open
+ivory-page book on top, three-quarter perspective, soft blue light, transparent
+background, no text or logo") and `public/account-recovery.png` (prompt: "Glossy
+azure envelope, white letter with three pale blue strokes, padlock and paper
+plane, polished 3D style, transparent background, no text or logo").
+
 ## Verification
 
 GitHub Actions runs lint, production build, API integration tests with MongoDB 8
