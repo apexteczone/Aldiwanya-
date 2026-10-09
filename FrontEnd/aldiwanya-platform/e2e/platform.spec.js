@@ -192,6 +192,13 @@ test("dashboard publishing produces public courses, plans, free video and PDFs",
   await expect(
     page.getByText("كورس اختبار الربط", { exact: true }),
   ).toBeVisible();
+  for (const route of ["dashboard", "grades", "grades/add", "courses", "courses/new", "lessons", "video", "upload", "pdfs", "pdfs/new", "plans", "students", "subscriptions", "payments", "settings"]) {
+    await page.goto("/admin/" + route);
+    await page.waitForLoadState("networkidle");
+    await expect(page).toHaveURL(new RegExp("/admin/" + route + "$"));
+    await expect(page.locator("h1, h2").first()).toBeVisible();
+    await screenshot(page, info, "admin-" + route.replaceAll("/", "-"));
+  }
 });
 test("registration, playback, favorites, progress and profile persist through the real API", async ({
   page,
