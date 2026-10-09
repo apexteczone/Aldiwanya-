@@ -87,11 +87,6 @@ function CourseView({ course, preview }) {
         key={l._id}
         onClick={() => selected(l._id)}
       >
-        <nav aria-label="مسار التصفح" className="catalog-breadcrumb">
-          <Link to="/#grades">الصفوف الدراسية</Link><span> / </span>
-          {course.grade && <><Link to={`/courses?grade=${course.grade._id}`}>{course.grade.name}</Link><span> / </span></>}
-          <span>{course.title}</span>
-        </nav>
         <PlayCircle size={17} />
         <span>{l.title}</span>
         {activity?.completedLessons.some((done) => done._id === l._id) && (
@@ -108,6 +103,11 @@ function CourseView({ course, preview }) {
         }
         compact
       >
+        <nav aria-label="مسار التصفح" className="catalog-breadcrumb">
+          <Link to="/#grades">الصفوف الدراسية</Link><span> / </span>
+          {course.grade && <><Link to={`/courses?grade=${course.grade._id}`}>{course.grade.name}</Link><span> / </span></>}
+          <span>{course.title}</span>
+        </nav>
         <div className="hero-features">
           <span>
             <BookOpen />
