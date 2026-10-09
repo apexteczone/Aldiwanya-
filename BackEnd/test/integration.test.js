@@ -245,6 +245,8 @@ test('password reset consumes the token once and revokes existing sessions',asyn
 });
 
 test('admin reference forms preserve private notes, ordering, uploads and plan descriptions',async()=>{
+ await User.create({fullName:'Reference Student',email:'reference@example.com',phoneNumber:'+96550000088',passwordHash:hash({plainText:password}),role:'Student',termsAccepted:true});
+ const referenceStudentToken=(await request('POST','/api/v1/auth/login',{identifier:'reference@example.com',password})).data.accessToken;
  const created=await request('POST','/api/v1/admin/lessons',{title:'Reference lesson',courseId,position:7,description:'Public description',internalNotes:'Internal staff-only note',status:'published'},adminToken);
  assert.equal(created.status,201,JSON.stringify(created));const id=created.data._id;assert.equal(created.data.position,7);
  const adminRows=await request('GET','/api/v1/admin/lessons',undefined,adminToken);assert.equal(adminRows.data.find(l=>l._id===id).internalNotes,'Internal staff-only note');
@@ -257,7 +259,7 @@ test('admin reference forms preserve private notes, ordering, uploads and plan d
  const video=await request('POST','/api/v1/admin/videos',data,adminToken);assert.equal(video.status,201,JSON.stringify(video));assert.match(video.data.thumbnailUrl,/^\/uploads\/images\/.+\.png$/);assert.equal(video.data.description,'Video description');
  assert.equal((await request('GET','/api/v1/library/lessons/'+id+'/videos')).data.length,0);
  assert.equal((await request('PATCH','/api/v1/admin/videos/'+video.data._id,{videoUrl:'javascript:alert(1)'},adminToken)).status,422);
- assert.equal((await request('PATCH','/api/v1/admin/videos/'+video.data._id,{videoUrl:'https://vimeo.com/123456',description:'Updated'},studentToken)).status,403);
+ assert.equal((await request('PATCH','/api/v1/admin/videos/'+video.data._id,{videoUrl:'https://vimeo.com/123456',description:'Updated'},referenceStudentToken)).status,403);
  assert.equal((await request('PATCH','/api/v1/admin/videos/'+video.data._id,{videoUrl:'https://vimeo.com/123456',description:'Updated'},adminToken)).status,200);
  assert.equal((await request('DELETE','/api/v1/admin/lessons/'+id,undefined,adminToken)).status,409);
  const invalid=new FormData();invalid.set('title','Bad upload');invalid.set('lessonId',id);invalid.set('videoUrl','https://example.com/v.mp4');invalid.set('thumbnail',new Blob(['<svg onload="alert(1)"></svg>'],{type:'image/png'}),'fake.png');assert.equal((await request('POST','/api/v1/admin/videos',invalid,adminToken)).status,422);
