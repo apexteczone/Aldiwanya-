@@ -18,3 +18,80 @@ export async function deleteLesson(id){const l=await getLessonById(id);if(await 
 export const publishLesson=id=>updateLesson(id,{status:'published'});
 export const hideLesson=id=>updateLesson(id,{status:'draft'});
 export async function reorderLessons(courseId,ids,moduleId){const filter=moduleId?{moduleId}:{courseId};check(moduleId||courseId);const rows=await Lesson.find(filter).select('_id');if(new Set(ids).size!==ids.length||rows.length!==ids.length||rows.some(r=>!ids.includes(String(r._id))))throw new Error('Invalid lesson ordering',{cause:422});await Lesson.bulkWrite(ids.map((id,position)=>({updateOne:{filter:{_id:id,...filter},update:{$set:{position}}}})));return Lesson.find(filter).sort({position:1});}
+
+
+
+
+
+const extractYouTubeVideoId = (youtubeUrl) => {
+  let parsedUrl;
+
+  try {
+    parsedUrl = new URL(youtubeUrl);
+  } catch {
+    throw new Error("Invalid YouTube URL", { cause: 400 });
+  }
+
+  const host = parsedUrl.hostname
+    .toLowerCase()
+    .replace(/^www\./, "");
+
+  let videoId = null;
+
+  if (host === "youtu.be") {
+    videoId = parsedUrl.pathname.split("/").filter(Boolean)[0];
+  } else if (
+    [
+      "youtube.com",
+      "m.youtube.com",
+      "youtube-nocookie.com",
+    ].includes(host)
+  ) {
+    videoId = parsedUrl.searchParams.get("v");
+
+    if (!videoId) {
+      const match = parsedUrl.pathname.match(
+        /^\/(?:embed|shorts|live)\/([^/]+)/
+      );
+
+      videoId = match?.[1] || null;
+    }
+  }
+
+  if (!videoId || !/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+    throw new Error("Invalid YouTube video URL", { cause: 400 });
+  }
+
+  return videoId;
+};
+
+export const createLessonWithVideo = async (data) => {
+  const course = await Course.findById(data.courseId);
+
+  if (!course) {
+    throw new Error("Course not found", { cause: 404 });
+  }
+
+  const videoId = extractYouTubeVideoId(data.youtubeUrl);
+
+  const lesson = await Lesson.create({
+    courseId: data.courseId,
+    title: data.title,
+    description: data.description ?? "",
+    status: data.status ?? "draft",
+    position: data.position ?? 0,
+    isFreePreview: data.isFreePreview ?? false,
+    videoId,
+  });
+
+  return {
+    _id: lesson._id,
+    courseId: lesson.courseId,
+    title: lesson.title,
+    description: lesson.description,
+    status: lesson.status,
+    position: lesson.position,
+    isFreePreview: lesson.isFreePreview,
+    videoId: lesson.videoId,
+  };
+};

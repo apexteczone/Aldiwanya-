@@ -2,6 +2,8 @@ import Router from "express";
 
 import asyncHandler from "../../utils/errorHandling/asyncHandler.js";
 
+import { optionalAuthentication } from "../../middlewares/authMiddleware.js";
+
 import {
   getPublicGrades,
   getPublishedCourses,
@@ -24,6 +26,7 @@ router.get(
 
 router.get(
   "/lessons/:id",
+  optionalAuthentication(),
   asyncHandler(getPublishedLessonById)
 );
 

@@ -7,3 +7,27 @@ export const courseLessonsSchema=Joi.object({courseId:id.required()});
 export const createLessonSchema=Joi.object({...fields,title:fields.title.required()}).or('courseId','moduleId');
 export const updateLessonSchema=Joi.object(fields).min(1);
 export const reorderLessonsSchema=Joi.object({courseId:id,moduleId:id,ids:Joi.array().items(id).unique().min(1).required()}).xor('courseId','moduleId');
+
+export const createLessonWithVideoSchema = Joi.object({
+  courseId: Joi.string().hex().length(24).required(),
+
+  title: Joi.string().trim().min(2).max(150).required(),
+
+  description: Joi.string()
+    .trim()
+    .max(2000)
+    .allow("")
+    .default(""),
+
+  status: Joi.string()
+    .valid("draft", "published")
+    .default("draft"),
+
+  position: Joi.number().integer().min(0).default(0),
+
+  youtubeUrl: Joi.string()
+    .uri({ scheme: ["https"] })
+    .required(),
+
+  isFreePreview: Joi.boolean().default(false),
+}).unknown(false);

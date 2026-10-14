@@ -26,18 +26,26 @@ const lessonSchema = new mongoose.Schema(
     },
 
     isFreePreview: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    internalNotes: {type: String, trim: true, maxlength: 2000, default: '', select: false},
+  type: Boolean,
+  default: false,
+  index: true,
+},
 
-    status: {
-      type: String,
-      enum: ["draft", "published"],
-      default: "draft",
-      index: true,
-    },
+
+videoId: {
+  type: String,
+  trim: true,
+  default: null,
+  match: /^[A-Za-z0-9_-]{11}$/,
+},
+
+internalNotes: {
+  type: String,
+  trim: true,
+  maxlength: 2000,
+  default: "",
+  select: false,
+},
 
     position: {
       type: Number,
@@ -45,6 +53,7 @@ const lessonSchema = new mongoose.Schema(
       default: 0,
       index: true,
     },
+    status:{type:String,enum:['draft','published'],default:'draft',index:true}
   },
   {
     timestamps: true,

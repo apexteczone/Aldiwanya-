@@ -152,3 +152,53 @@ export const allowTo = (
 };
 
 export default authentication;
+
+
+
+export const optionalAuthentication = () =>
+  asyncHandler(async (req, res, next) => {
+    const { authorization } = req.headers;
+
+    // No token is allowed for public content and free previews.
+    if (!authorization) {
+      return next();
+    }
+
+    const parts = authorization.split(" ");
+
+    if (
+      parts.length !== 2 ||
+      parts[0] !== "Bearer" ||
+      !parts[1]
+    ) {
+      return next(
+        new Error("Invalid authorization format", { cause: 401 })
+      );
+    }
+
+    let decoded;
+
+    try {
+      decoded = verifyToken({ token: parts[1] });
+    } catch {
+      return next(
+        new Error("Invalid or expired token", { cause: 401 })
+      );
+    }
+
+    const user = await UserModel.findById(decoded.id);
+
+    if (!user) {
+      return next(new Error("User Not Found", { cause: 404 }));
+    }
+
+    if (decoded.tokenVersion !== user.tokenVersion) {
+      return next(
+        new Error("Token has been revoked", { cause: 401 })
+      );
+    }
+
+    req.user = user;
+
+    return next();
+  });

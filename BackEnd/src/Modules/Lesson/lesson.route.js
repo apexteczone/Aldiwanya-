@@ -7,7 +7,7 @@ import authentication, {
 import validation from "../../middlewares/validation.middleware.js";
 
 import * as lessonController from "./lesson.controller.js";
-
+import asyncHandler from "../../utils/errorHandling/asyncHandler.js";
 import {
   getLessonByIdSchema,
   createLessonSchema,
@@ -15,6 +15,7 @@ import {
   lessonIdSchema,
   courseLessonsSchema,
   reorderLessonsSchema,
+  createLessonWithVideoSchema
 } from "./lesson.validation.js";
 
 
@@ -174,6 +175,14 @@ router.patch(
   ),
 
   lessonController.hideLesson
+);
+
+router.post(
+  "/CreateLessonWithVideo",
+  authentication(),
+ allowTo(["admin","Admin"]),
+  validation(createLessonWithVideoSchema),
+  asyncHandler(lessonController.createLessonWithVideo)
 );
 
 
