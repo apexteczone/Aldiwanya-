@@ -1,3 +1,5 @@
+import LessonPage from '../pages/lessons/LessonPage';
+import PaymentReturnPage from '../pages/payment/PaymentReturnPage';
 import {lazy,Suspense} from 'react';
 // import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
@@ -23,8 +25,6 @@ const AdminDashboardPage=lazy(()=>import('../pages/admin/AdminDashboardPage'));
 const PaymentsPage=lazy(()=>import('../pages/admin/PaymentsPage'));
 const SubscriptionsPage=lazy(()=>import('../pages/admin/SubscriptionsPage'));
 const StudentsPage=lazy(()=>import('../pages/admin/StudentsPage'));
-const VideosManagementPage=lazy(()=>import('../pages/admin/VideosManagementPage'));
-const UploadVideoPage=lazy(()=>import('../pages/admin/UploadVideoPage'));
 const PdfManagementPage=lazy(()=>import('../pages/admin/PdfManagementPage'));
 const UploadPdfPage=lazy(()=>import('../pages/admin/UploadPdfPage'));
 const CoursesManagementPage=lazy(()=>import('../pages/admin/CoursesManagementPage'));
@@ -66,8 +66,9 @@ export default function AppRoutes() {
               
               <Route path="lessons" element={<LessonsManagementPage />} />
               <Route path="plans" element={<Navigate to="/admin/subscriptions" replace />} />
-              <Route path="video" element={<VideosManagementPage />} />
-              <Route path="upload" element={<UploadVideoPage />} />
+              <Route path="video" element={<Navigate to="/admin/lessons" replace />} />
+              <Route path="upload" element={<Navigate to="/admin/lessons" replace />} />
+              <Route path="lessons/new" element={<LessonsManagementPage />} />
               
               
               <Route path="courses" element={<CoursesManagementPage />} />
@@ -102,6 +103,8 @@ export default function AppRoutes() {
       <Route path="/account" element={<StudentGuard><AccountPage /></StudentGuard>} />
       <Route path="/subscriptions" element={<StudentGuard><SubscriptionHistory /></StudentGuard>} />
       <Route path="/courses" element={<CoursesPage />} />
+      <Route path="/lessons/:id" element={<LessonPage />} />
+      <Route path="/payment/return" element={<PaymentReturnPage />} />
       <Route path="/plans" element={<PlansPage />} />
       <Route path="/library" element={<LibraryPage />} />
       <Route path="/previews" element={<PreviewsPage />} />

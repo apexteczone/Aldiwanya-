@@ -1,7 +1,9 @@
+import {mockYouTube} from './youtube-double.js';
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 test.describe.configure({ mode: "serial" });
+test.beforeEach(async({page})=>mockYouTube(page));
 let courseId, lessonId;
 const studentEmail = "browser-student@example.com",
   studentPassword = "BrowserStudent!2026";
@@ -99,19 +101,14 @@ test("dashboard publishing produces public courses, plans, free video and PDFs",
   await create("/admin/courses", { title: "كورس غير منشور", grade: grade._id, subject: "مادة اختبار", status: "draft" });
   const lesson = await create("/admin/lessons", {
     title: "درس اختبار منشور",
+    youtubeUrl:"https://youtu.be/aqz-KE-bpKQ",
+    isFreePreview:true,
+    durationSeconds:5,
     courseId,
     status: "published",
   });
   lessonId = lesson._id;
-  await create("/admin/lessons", { title: "درس غير منشور", courseId, status: "draft" });
-  await create("/admin/videos", {
-    title: "معاينة اختبار مجانية",
-    lessonId,
-    videoUrl: "https://media.example.test/flower.mp4",
-    accessLevel: "free",
-    status: "published",
-    durationSeconds: 5,
-  });
+  await create("/admin/lessons", { title: "درس غير منشور", courseId, status: "draft",youtubeUrl:"https://youtu.be/dQw4w9WgXcQ" });
   await create("/plan/CreatePlan", {
     title: "خطة اختبار شهرية",
     durationMonths: 1,
@@ -151,7 +148,7 @@ test("dashboard publishing produces public courses, plans, free video and PDFs",
   await expect(page.getByRole("button", {name:"درس اختبار منشور",exact:true})).toBeVisible();
   await expect(page.getByText("درس غير منشور", {exact:true})).toHaveCount(0);
   await page.getByRole("button", {name:"درس اختبار منشور",exact:true}).click();
-  await expect(page).toHaveURL(new RegExp("lesson=" + lessonId));
+  await expect(page).toHaveURL(new RegExp("/lessons/" + lessonId));
   await page.reload();
   await expect(page.getByRole("heading", {name:"درس اختبار منشور",exact:true})).toBeVisible();
   await page.setViewportSize({width:1440,height:1000});
@@ -170,22 +167,15 @@ test("dashboard publishing produces public courses, plans, free video and PDFs",
   await expect(
     page.getByRole("heading", { name: "مذكرة اختبار مجانية" }),
   ).toBeVisible();
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("link", { name: "تحميل الملف", exact: true }).click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("document.pdf");
-  expect(
-    (await readFile(await download.path())).toString().startsWith("%PDF-"),
-  ).toBe(true);
   await screenshot(page, info, "library-published");
   await page.goto("/plans");
   await page.getByRole("button", { name: "اختر الخطة", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "متابعة الدفع" }),
+    page.getByRole("button", { name: "سجّل الدخول للمتابعة" }),
   ).toBeDisabled();
   await expect(
     page.getByText(
-      "الدفع غير متاح حاليًا. سيُتاح بعد اكتمال الربط مع ماي فاتورة.",
+      "الدفع غير متاح حاليًا. المعاينات والمكتبة المجانية متاحة للجميع.",
     ),
   ).toBeVisible();
   await screenshot(page, info, "plans-published");
@@ -246,7 +236,7 @@ test("registration, playback, favorites, progress and profile persist through th
     page.getByRole("heading", { name: "كورس اختبار الربط", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "معاينة اختبار مجانية", exact: true }),
+    page.getByRole("heading", { name: "درس اختبار منشور", exact: true }),
   ).toBeVisible();
   await expect(page.locator("progress")).toHaveAttribute("value", "100");
   await screenshot(page, info, "student-dashboard");
@@ -296,8 +286,12 @@ test('admin reference pages save lessons, video thumbnails and subscription plan
  await page.getByLabel('ترتيب الدرس',{exact:true}).fill('5');
  await page.getByLabel('وصف الدرس',{exact:true}).fill('وصف منشور من نموذج الإدارة.');
  await page.getByLabel('ملاحظات داخلية',{exact:true}).fill('ملاحظة سرية للمدير فقط');
+ await page.getByLabel('رابط فيديو YouTube',{exact:true}).fill('https://youtu.be/aqz-KE-bpKQ');
+ await page.getByLabel('صورة مصغرة للدرس',{exact:true}).setInputFiles({name:'thumbnail.png',mimeType:'image/png',buffer:await readFile(fileURLToPath(new URL('../public/diwaniya-majlis.png',import.meta.url)))});
+ await page.getByRole('checkbox',{name:'الدرس مجاني — متاح للجميع بدون اشتراك'}).check();
+ await page.getByLabel('مدة الفيديو بالثواني',{exact:true}).fill('5');
  await page.getByRole('button',{name:'إضافة الدرس',exact:true}).click();
- await expect(page.getByRole('status')).toContainText('تم إضافة الدرس.');
+ await expect(page.getByRole('status')).toContainText('تم حفظ الدرس والفيديو معًا.');
  await page.getByRole('button',{name:'تعديل درس تصميم الإدارة',exact:true}).click();
  await expect(page.getByLabel('ترتيب الدرس',{exact:true})).toHaveValue('5');
  await expect(page.getByLabel('ملاحظات داخلية',{exact:true})).toHaveValue('ملاحظة سرية للمدير فقط');
@@ -309,30 +303,15 @@ test('admin reference pages save lessons, video thumbnails and subscription plan
  const lesson=publicCourse.data.lessons.find(l=>l.title==='درس تصميم الإدارة');
  expect(lesson.position).toBe(4);expect(lesson.internalNotes).toBeUndefined();
  await page.goto('/admin/upload');
- await page.route('https://media.example.test/flower.mp4',route=>route.fulfill({path:fileURLToPath(new URL('./fixtures/flower.mp4',import.meta.url)),contentType:'video/mp4'}));
- await page.getByLabel('اختر الكورس',{exact:true}).selectOption(courseId);
- await page.getByLabel('اختر الدرس',{exact:true}).selectOption(lesson._id);
- await page.getByLabel('عنوان الفيديو',{exact:true}).fill('فيديو تصميم الإدارة');
- await page.getByLabel('رابط الفيديو',{exact:true}).fill('https://media.example.test/flower.mp4');
- await page.getByLabel('وصف الفيديو',{exact:true}).fill('وصف الفيديو من لوحة الإدارة.');
- await page.getByLabel('صورة مصغرة للفيديو',{exact:true}).setInputFiles({name:'thumbnail.png',mimeType:'image/png',buffer:await readFile(fileURLToPath(new URL('../public/diwaniya-majlis.png',import.meta.url)))});
- await page.getByText('إعدادات النشر والوصول',{exact:true}).click();
- await page.getByLabel('وصول الفيديو',{exact:true}).selectOption('free');
- await page.getByLabel('حالة الفيديو',{exact:true}).selectOption('published');
- await page.getByLabel('مدة الفيديو بالثواني',{exact:true}).fill('5');
- await page.getByRole('button',{name:'حفظ الفيديو',exact:true}).click();
- await expect(page.getByRole('status')).toContainText('تم حفظ الفيديو وربطه بالدرس.');
- await page.getByRole('button',{name:'تعديل فيديو تصميم الإدارة',exact:true}).click();
- await expect(page.getByLabel('وصف الفيديو',{exact:true})).toHaveValue('وصف الفيديو من لوحة الإدارة.');
- await page.locator('video').evaluate(v=>v.play());
+ await expect(page).toHaveURL(/\/admin\/lessons$/);
+ await page.getByRole('button',{name:'تعديل درس تصميم الإدارة',exact:true}).click();
+ await expect(page.getByLabel('رابط فيديو YouTube',{exact:true})).toHaveValue('https://www.youtube.com/watch?v=aqz-KE-bpKQ');
+ await page.getByRole('button',{name:'تشغيل الفيديو',exact:true}).click();
  await expect.poll(()=>page.locator('video').evaluate(v=>v.currentTime)).toBeGreaterThan(0);
- await page.getByText('إعدادات النشر والوصول',{exact:true}).click();
- await screenshot(page,info,'admin-reference-video');
- await page.getByRole('button',{name:'إلغاء',exact:true}).click();
- await page.getByLabel('رابط الفيديو',{exact:true}).fill('https://youtu.be/dQw4w9WgXcQ');
- await expect(page.locator('iframe')).toHaveAttribute('src','https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ');
- await page.getByLabel('رابط الفيديو',{exact:true}).fill('https://vimeo.com/123456');
- await expect(page.locator('iframe')).toHaveAttribute('src','https://player.vimeo.com/video/123456');
+ await expect(page.getByRole('button',{name:'إيقاف مؤقت',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'إيقاف مؤقت',exact:true}).click();
+ await screenshot(page,info,'admin-unified-lesson-video');
+ await expect(page.locator('aside').getByRole('link',{name:'الفيديوهات',exact:true})).toHaveCount(0);
  await page.goto('/admin/plans');
  await expect(page).toHaveURL(/\/admin\/subscriptions$/);
  await page.getByRole('button',{name:'ترم',exact:true}).click();
@@ -364,3 +343,58 @@ test('admin reference pages save lessons, video thumbnails and subscription plan
  }
 });
 
+
+test('paid lesson returns through registration, checkout and verified payment',async({page,request},info)=>{
+ const auth=await request.post('/api/v1/auth/login',{data:{identifier:'admin@example.com',password:'AldiwanyaLocal!2026'}});
+ const token=(await auth.json()).data.accessToken;
+ const response=await request.post('/api/v1/admin/lessons',{headers:{Authorization:'Bearer '+token},data:{courseId,title:'درس دورة الاشتراك',youtubeUrl:'https://youtu.be/dQw4w9WgXcQ',status:'published',isFreePreview:false}});
+ expect(response.ok(),await response.text()).toBe(true);
+ const lesson=(await response.json()).data;
+ await page.goto('/lessons/'+lesson._id);
+ await expect(page).toHaveURL(/\/login\?next=/);
+ await page.getByRole('link',{name:'إنشاء حساب جديد',exact:true}).click();
+ await expect(page).toHaveURL(/\/register\?next=/);
+ await page.getByLabel('الاسم الكامل',{exact:true}).fill('طالب تجربة الاشتراك');
+ await page.getByLabel('البريد الإلكتروني',{exact:true}).fill('payment-browser@example.com');
+ await page.getByLabel('رقم الجوال',{exact:true}).fill('50000092');
+ await page.getByLabel('كلمة المرور',{exact:true}).fill('PaymentBrowser!2026');
+ await page.getByLabel('تأكيد كلمة المرور',{exact:true}).fill('PaymentBrowser!2026');
+ await page.getByRole('checkbox').check();
+ await page.getByRole('button',{name:'إنشاء حساب',exact:true}).click();
+ await expect(page).toHaveURL(new RegExp('/plans\\?next=.*'+lesson._id));
+ await request.post('/__test/payments/enable');
+ await page.reload();
+ await page.getByRole('button',{name:'اختر الخطة',exact:true}).first().click();
+ await expect(page.getByLabel('وسيلة الدفع',{exact:true})).toHaveValue('2');
+ await screenshot(page,info,'checkout-plan-selected');
+ await page.route('https://demo.myfatoorah.com/e2e/*',async route=>{
+  const invoice=route.request().url().split('/').pop();
+  const result=await request.post('/__test/payments/'+invoice+'/paid');
+  const {returnUrl}=await result.json();
+  // Simulated external gateway redirect; settlement still calls the backend verifier.
+  await route.fulfill({status:302,headers:{location:'http://127.0.0.1:5099'+returnUrl},body:''});
+ });
+ await page.getByRole('button',{name:'متابعة الدفع',exact:true}).click();
+ await expect(page).toHaveURL(new RegExp('/lessons/'+lesson._id+'$'),{timeout:20000});
+ await expect(page.getByRole('heading',{name:'درس دورة الاشتراك',exact:true})).toBeVisible();
+ await expect(page.locator('video')).toHaveAttribute('data-youtube-id','dQw4w9WgXcQ');
+ await page.getByRole('button',{name:'تشغيل الفيديو',exact:true}).click();
+ await expect.poll(()=>page.locator('video').evaluate(v=>v.currentTime)).toBeGreaterThan(0);
+ await screenshot(page,info,'paid-lesson-after-subscription');
+ await page.setViewportSize({width:390,height:844});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ await screenshot(page,info,'paid-lesson-mobile');
+});
+
+// Keep the browser's actual save-to-disk check separate from the learning/payment flow.
+test('public PDF downloads save the expected file', async ({page}) => {
+  await page.goto('/library');
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("link", { name: "تحميل الملف", exact: true }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("document.pdf");
+  expect(
+    (await readFile(await download.path())).toString().startsWith("%PDF-"),
+  ).toBe(true);
+
+});

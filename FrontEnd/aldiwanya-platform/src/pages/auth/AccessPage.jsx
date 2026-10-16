@@ -1,3 +1,4 @@
+import {safeAuthNext} from '../../utils/returnTo';
 import { useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -41,16 +42,12 @@ export default function AccessPage({ register = false }) {
         e.target.type === "checkbox" ? e.target.checked : e.target.value,
     });
   const next = params.get("next");
-  const destination =
-    next?.startsWith("/") &&
-    !next.startsWith("//") &&
-    !/^\/(login|register|auth)(\/|\?|$)/.test(next)
-      ? next
-      : "/dashboard";
+  const destination = safeAuthNext(next);
+  const nextQuery = next ? '?next='+encodeURIComponent(destination) : '';
   if (!loading && profile)
     return (
       <Navigate
-        to={profile.user.role === "Admin" ? "/admin/dashboard" : destination}
+        to={!next && profile.user.role === "Admin" ? "/admin/dashboard" : destination}
         replace
       />
     );
@@ -78,7 +75,7 @@ export default function AccessPage({ register = false }) {
         rememberMe: values.rememberMe,
       });
       navigate(
-        result.user.role === "Admin" ? "/admin/dashboard" : destination,
+        !next && result.user.role === "Admin" ? "/admin/dashboard" : destination,
         { replace: true },
       );
     } catch (e) {
@@ -245,12 +242,12 @@ export default function AccessPage({ register = false }) {
             <>
               <AuthNotice />
               <p className="auth-switch">
-                عندك حساب بالفعل؟ <Link to="/login">تسجيل الدخول</Link>
+                عندك حساب بالفعل؟ <Link to={"/login"+nextQuery}>تسجيل الدخول</Link>
               </p>
             </>
           ) : (
             <div className="login-bottom">
-              <Link className="site-button outline" to="/register">
+              <Link className="site-button outline" to={"/register"+nextQuery}>
                 <UserPlus size={17} />
                 إنشاء حساب جديد
               </Link>

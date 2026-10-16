@@ -6,7 +6,6 @@ import footerImage from '/src/assets/kiwait.png';
 import { 
   Home, 
   BookOpen, 
-  Video, 
   FileText, 
   Users, 
   Crown, 
@@ -25,7 +24,6 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
     { title: 'الرئيسية', icon: Home, path: '/admin/dashboard' },
     { title: 'إدارة المواد', icon: BookOpen, path: '/admin/courses' },
     { title: 'إدارة الدروس', icon: BookOpen, path: '/admin/lessons' },
-    { title: 'الفيديوهات', icon: Video, path: '/admin/video' },
     { title: 'الملفات المجانية (PDF)', icon: FileText, path: '/admin/pdfs' },
     { title: 'الطلاب', icon: Users, path: '/admin/students' },
     { title: 'الاشتراكات', icon: Crown, path: '/admin/subscriptions' },

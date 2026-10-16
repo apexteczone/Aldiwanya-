@@ -1,6 +1,6 @@
 import VideoPlayer from '../../components/common/VideoPlayer';
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom";
 import {
   BookOpen,
   CheckCircle,
@@ -16,7 +16,6 @@ import { assetUrl, errorMessage } from "../../utils/platform";
 import {
   Empty,
   Hero,
-  LockedContent,
   ResourceState,
 } from "../../components/common/PlatformUI";
 export default function CourseDetailsPage({ preview = false }) {
@@ -34,15 +33,16 @@ export default function CourseDetailsPage({ preview = false }) {
     </ResourceState>
   );
 }
-function CourseView({ course, preview }) {
+export function CourseView({ course, preview=false, initialLessonId }) {
+  const navigate=useNavigate();
   const { profile } = usePlatform(),
-    [params, setParams] = useSearchParams(),
+    [params] = useSearchParams(),
     [tab, setTab] = useState("intro");
   const [activity, setActivity] = useState(null),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   const lessons = course.lessons || [],
-    lesson = lessons.find((l) => l._id === params.get("lesson")) || lessons[0];
+    lesson = lessons.find((l) => l._id === (initialLessonId || params.get("lesson"))) || (preview ? lessons.find(l=>l.isFreePreview) : lessons[0]);
   useEffect(() => {
     if (!profile) return;
     let live = true;
@@ -75,12 +75,7 @@ function CourseView({ course, preview }) {
       setBusy(false);
     }
   }
-  const selected = (id) => {
-    const next = new URLSearchParams(params);
-    next.set("lesson", id);
-    next.delete("video");
-    setParams(next);
-  };
+  const selected = (id) => navigate('/lessons/'+id);
   const lessonList = (rows) =>
     rows.map((l) => (
       <button
@@ -144,7 +139,7 @@ function CourseView({ course, preview }) {
                 <span>{course.durationHours} ساعة</span>
               )}
             </div>
-            <Link className="site-button full" to="/plans">
+            <Link className="site-button full" to={lesson?"/plans?next="+encodeURIComponent("/lessons/"+lesson._id):"/plans"}>
               <Crown size={17} />
               عرض الاشتراكات
             </Link>
@@ -177,6 +172,7 @@ function CourseView({ course, preview }) {
               preview={preview}
               profile={profile}
               activity={activity}
+              autoRedirect={!!initialLessonId || !!params.get("lesson")}
               onActivity={setActivity}
             />
           ) : (
@@ -208,7 +204,7 @@ function CourseView({ course, preview }) {
                   المعاينات المنشورة هنا مجانية. الاشتراك يتيح المحتوى المدفوع.
                 </p>
               </div>
-              <Link to="/plans" className="site-button">
+              <Link to={lesson?"/plans?next="+encodeURIComponent("/lessons/"+lesson._id):"/plans"} className="site-button">
                 خطط الاشتراك
               </Link>
             </div>
@@ -284,147 +280,44 @@ function CourseView({ course, preview }) {
     </>
   );
 }
-function LessonPlayer({
-  lesson,
-  courseId,
-  preview,
-  profile,
-  activity,
-  onActivity,
-}) {
-  const resource = useResource("/library/lessons/" + lesson._id + "/videos"),
-    [params, setParams] = useSearchParams(),
-    [message, setMessage] = useState(""),
-    [busy, setBusy] = useState(false);
-  const started = useRef(false);
-  async function recordStart() {
-    if (!profile || started.current) return;
-    started.current = true;
-    try {
-      await api.patch("/student/activity", {
-        kind: "start",
-        id: courseId,
-        enabled: true,
-      });
-    } catch (e) {
-      started.current = false;
-      setMessage(errorMessage(e));
-    }
-  }
-  const videos = (resource.data || []).filter(
-      (v) => !preview || v.accessLevel === "free",
-    ),
-    video = videos.find((v) => v._id === params.get("video")) || videos[0];
-  async function favorite() {
-    setBusy(true);
-    setMessage("");
-    try {
-      await api.patch("/student/activity", {
-        kind: "favorite",
-        id: video._id,
-        enabled: !activity?.favoriteVideos.some((v) => v._id === video._id),
-      });
-      onActivity((await api.get("/student/activity")).data.data);
-    } catch (e) {
-      setMessage(errorMessage(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <ResourceState resource={resource}>
-      {video ? (
-        <>
-          <div className="video-stage">
-            <VideoPlayer
-              key={video._id}
-              controls
-              playsInline
-              onPlay={recordStart}
-              preload="metadata"
-              poster={assetUrl(video.thumbnailUrl) || undefined}
-              src={assetUrl(video.videoUrl)}
-              onError={() =>
-                setMessage(
-                  "تعذر تشغيل الفيديو. تأكد من أن رابط الفيديو ملف قابل للتشغيل ومتاح.",
-                )
-              }
-            >
-
-            </VideoPlayer>
-          </div>
-          <div className="video-title">
-            <h3>{video.title}</h3>
-            {profile ? (
-              <button
-                className="icon-button"
-                disabled={busy}
-                aria-label={
-                  activity?.favoriteVideos.some((v) => v._id === video._id)
-                    ? "إزالة من المفضلة"
-                    : "إضافة إلى المفضلة"
-                }
-                onClick={favorite}
-              >
-                <Heart
-                  fill={
-                    activity?.favoriteVideos.some((v) => v._id === video._id)
-                      ? "currentColor"
-                      : "none"
-                  }
-                  size={21}
-                />
-              </button>
-            ) : (
-              <Link to="/login">سجّل الدخول لحفظ المفضلة</Link>
-            )}
-          </div>
-          {videos.length > 1 && (
-            <div className="video-options">
-              {videos.map((v) => (
-                <button
-                  className={video._id === v._id ? "active" : ""}
-                  key={v._id}
-                  onClick={() => {
-                    const next = new URLSearchParams(params);
-                    next.set("video", v._id);
-                    setParams(next);
-                    setMessage("");
-                  }}
-                >
-                  <PlayCircle size={16} />
-                  {v.title}
-                </button>
-              ))}
-            </div>
-          )}
-          {message && (
-            <p role="alert" className="form-error">
-              {message}
-            </p>
-          )}
-        </>
-      ) : preview ? (
-        <Empty icon={PlayCircle}>
-          لا توجد معاينة مجانية منشورة لهذا الدرس.
-        </Empty>
-      ) : profile ? (
-        <LockedContent />
-      ) : (
-        <div className="site-empty">
-          <LockKeyhole size={42} />
-          <h3>لا توجد فيديوهات مجانية متاحة لهذا الدرس</h3>
-          <Link
-            to={
-              "/login?next=" +
-              encodeURIComponent(location.pathname + location.search)
-            }
-            className="site-button"
-          >
-            تسجيل الدخول لعرض محتواك
-          </Link>
-        </div>
-      )}
-    </ResourceState>
-  );
+function LessonPlayer({lesson,courseId,preview,profile,activity,onActivity,autoRedirect}){
+ const navigate=useNavigate(),{loading:authLoading}=usePlatform();
+ const [resource,setResource]=useState({loading:true,data:null,error:'',status:0}),[revision,setRevision]=useState(0);
+ const [message,setMessage]=useState(''),[busy,setBusy]=useState(false);
+ const started=useRef(false);
+ const next='/lessons/'+lesson._id;
+ useEffect(()=>{
+  if(authLoading)return;
+  let live=true;
+  api.get('/lessons/'+lesson._id+'/playback',{quiet:true}).then(r=>{if(live)setResource({loading:false,data:r.data.data,error:'',status:200});}).catch(e=>{
+   if(!live)return;
+   const status=e.response?.status;
+   if(autoRedirect&&[401,403].includes(status)){navigate((status===401?'/login':'/plans')+'?next='+encodeURIComponent('/lessons/'+lesson._id),{replace:true});return;}
+   setResource({loading:false,data:null,status,error:[401,403].includes(status)?'':errorMessage(e)});
+  });
+  return()=>{live=false;};
+ },[lesson._id,profile,authLoading,autoRedirect,navigate,revision]);
+ async function recordStart(){
+  if(!profile||started.current)return;started.current=true;
+  try{await api.patch('/student/activity',{kind:'start',id:courseId,enabled:true});}
+  catch(e){started.current=false;setMessage(errorMessage(e));}
+ }
+ async function favorite(){
+  setBusy(true);setMessage('');
+  try{await api.patch('/student/activity',{kind:'favorite',id:lesson._id,enabled:!activity?.favoriteLessons.some(l=>l._id===lesson._id)});onActivity((await api.get('/student/activity')).data.data);}
+  catch(e){setMessage(errorMessage(e));}finally{setBusy(false);}
+ }
+ const data=resource.data;
+ return <ResourceState resource={{...resource,retry:()=>setRevision(v=>v+1)}}>
+  {data?<><div className="video-stage"><VideoPlayer videoId={data.videoId} title={data.title} onPlay={recordStart}/></div>
+   <div className="video-title"><span className="access-badge">{data.isFreePreview?'درس مجاني':'محتوى المشتركين'}</span>
+    {profile?<button className="icon-button" disabled={busy} aria-label={activity?.favoriteLessons.some(l=>l._id===lesson._id)?'إزالة من المفضلة':'إضافة إلى المفضلة'} onClick={favorite}><Heart size={21} fill={activity?.favoriteLessons.some(l=>l._id===lesson._id)?'currentColor':'none'}/></button>:<Link to={'/login?next='+encodeURIComponent(next)}>سجّل الدخول لحفظ المفضلة</Link>}
+   </div>
+   {message&&<p role="alert" className="form-error">{message}</p>}
+  </>:preview?<Empty icon={PlayCircle}>اختر درسًا مجانيًا من محتويات الكورس لعرض المعاينة.</Empty>:<div className="site-empty">
+    <LockKeyhole size={42}/><h3>{resource.status===401?'سجّل الدخول لمشاهدة هذا الدرس':'هذا الدرس متاح للمشتركين'}</h3>
+    <p>ستعود لنفس الدرس بعد إتمام الخطوات.</p>
+    <Link className="site-button" to={(resource.status===401?'/login':'/plans')+'?next='+encodeURIComponent(next)}>{resource.status===401?'تسجيل الدخول':'عرض خطط الاشتراك'}</Link>
+   </div>}
+ </ResourceState>;
 }

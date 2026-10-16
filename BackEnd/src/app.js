@@ -19,16 +19,19 @@ import planRouter from './Modules/Plan/Plan.controller.js';
 import userRouter from './Modules/User/user.route.js';
 import contentRouter from './Modules/Content/content.controller.js';
 import libraryRouter from './Modules/Content/library.router.js';
-import paymentRouter from './Modules/Payment/paymentController.js';
+import createPaymentRouter from './Modules/Payment/paymentController.js';
+import {verifyPaymentIndexes} from './Modules/Payment/payment.service.js';
+import {paymentConfig} from './Modules/Payment/payment.config.js';
 import adminRouter from './Modules/Admin/adminController.js';
 import studentRouter from './Modules/Content/student.router.js';
 import globalErrorHandler from './utils/errorHandling/globalErrorHandler.js';
-export default async function bootstrap(app,express,{connect=true}={}) {
+export default async function bootstrap(app,express,{connect=true,paymentOptions}={}) {
  const {origins}=validateConfig();
  if(connect) await connectDB();
+ if(process.env.NODE_ENV==='production'&&paymentConfig().configured) await verifyPaymentIndexes();
  app.disable('x-powered-by');
  if(process.env.TRUST_PROXY_HOPS) app.set('trust proxy',Number(process.env.TRUST_PROXY_HOPS));
- app.use(helmet({crossOriginResourcePolicy:{policy:'same-site'},contentSecurityPolicy:{directives:{imgSrc:["'self'",'data:','blob:','https:'],mediaSrc:["'self'",'https:','blob:'],frameSrc:['https://www.youtube-nocookie.com','https://player.vimeo.com']}}}));
+ app.use(helmet({referrerPolicy:{policy:'strict-origin-when-cross-origin'},crossOriginResourcePolicy:{policy:'same-site'},contentSecurityPolicy:{directives:{scriptSrc:["'self'",'https://www.youtube.com','https://s.ytimg.com'],imgSrc:["'self'",'data:','blob:','https:'],mediaSrc:["'self'",'https:','blob:'],frameSrc:['https://www.youtube-nocookie.com','https://player.vimeo.com']}}}));
  app.use(cors({origin:(origin,cb)=>cb(origin&&!origins.includes(origin)?new Error('Origin not allowed',{cause:403}):null,true)}));
  app.use(express.json({limit:'128kb'}));
  app.use(express.urlencoded({extended:false,limit:'128kb'}));
@@ -44,7 +47,7 @@ export default async function bootstrap(app,express,{connect=true}={}) {
  api.use('/auth',authLimit,authRouter);
  api.use('/user',userRouter);
  api.use('/plan',planRouter);
- api.use('/payments',paymentRouter);
+ api.use('/payments',createPaymentRouter(paymentOptions));
  api.use('/library',libraryRouter);
  const admin=express.Router();
  admin.use(authentication(),allowTo(['Admin']));

@@ -236,3 +236,14 @@ export const reorderLessons = async (
     return next(error);
   }
 };
+
+
+
+export const createLessonWithVideo = async (req, res) => {
+  const lesson = await lessonService.createLessonWithVideo(req.body);
+
+  return res.status(201).json({
+    success: true,
+    data: lesson,
+  });
+};

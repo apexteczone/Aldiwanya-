@@ -10,7 +10,7 @@ api.interceptors.request.use(config=>{
 });
 api.interceptors.response.use(r=>r,error=>{
  if(error.response?.status===401){sessionStorage.removeItem('token');localStorage.removeItem('token');window.dispatchEvent(new Event('session-expired'));}
- window.dispatchEvent(new CustomEvent('api-error',{detail:error.response?.data?.error?.message||'تعذر الاتصال بالخادم. حاول مرة أخرى.'}));
+ if(!error.config?.quiet) window.dispatchEvent(new CustomEvent('api-error',{detail:error.response?.data?.error?.message||'تعذر الاتصال بالخادم. حاول مرة أخرى.'}));
  return Promise.reject(error);
 });
 export default api;

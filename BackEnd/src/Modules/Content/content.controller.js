@@ -1,30 +1,11 @@
-import Router from "express";
-
-import asyncHandler from "../../utils/errorHandling/asyncHandler.js";
-
-import {
-  getPublicGrades,
-  getPublishedCourses,
-  getPublishedCourseById,
-  getPublishedLessonById,
-} from "./content.service.js";
-
-const router = Router();
-router.get('/grades', asyncHandler(getPublicGrades));
-
-router.get(
-  "/courses",
-  asyncHandler(getPublishedCourses)
-);
-
-router.get(
-  "/courses/:id",
-  asyncHandler(getPublishedCourseById)
-);
-
-router.get(
-  "/lessons/:id",
-  asyncHandler(getPublishedLessonById)
-);
-
+import {Router} from 'express';
+import asyncHandler from '../../utils/errorHandling/asyncHandler.js';
+import {optionalAuthentication} from '../../middlewares/authMiddleware.js';
+import {getPublicGrades,getPublishedCourses,getPublishedCourseById,getPublishedLessonById,getLessonPlayback} from './content.service.js';
+const router=Router();
+router.get('/grades',asyncHandler(getPublicGrades));
+router.get('/courses',asyncHandler(getPublishedCourses));
+router.get('/courses/:id',asyncHandler(getPublishedCourseById));
+router.get('/lessons/:id',asyncHandler(getPublishedLessonById));
+router.get('/lessons/:id/playback',optionalAuthentication(),asyncHandler(getLessonPlayback));
 export default router;

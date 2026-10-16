@@ -119,7 +119,7 @@ export default function DashboardPage() {
               <div className="profile-detail">
                 <PlayCircle />
                 <span>فيديوهات مفضلة</span>
-                <b>{activity.data?.favoriteVideos.length || 0}</b>
+                <b>{activity.data?.favoriteLessons.length || 0}</b>
               </div>
             </ResourceState>
           </div>
@@ -210,9 +210,9 @@ export default function DashboardPage() {
           <section className="section">
             <SectionTitle title="فيديوهاتك المفضلة" />
             <ResourceState resource={activity}>
-              {activity.data?.favoriteVideos.length ? (
+              {activity.data?.favoriteLessons.length ? (
                 <div className="card-grid">
-                  {activity.data.favoriteVideos.map((v) => (
+                  {activity.data.favoriteLessons.map((v) => (
                     <VideoCard key={v._id} video={v} preview={false} />
                   ))}
                 </div>

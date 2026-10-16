@@ -10,7 +10,14 @@ export const price = (plan) =>
   new Intl.NumberFormat("ar-KW", {
     style: "currency",
     currency: plan.currency || "KWD",
-  }).format(plan.amountMinor / (plan.currency === "KWD" ? 1000 : 100));
+  }).format(
+    plan.amountMinor /
+      10 **
+        new Intl.NumberFormat("en", {
+          style: "currency",
+          currency: plan.currency || "KWD",
+        }).resolvedOptions().maximumFractionDigits,
+  );
 export const date = (value) =>
   value ? new Date(value).toLocaleDateString("ar-KW") : "—";
 export const activeSubscription = (rows) =>

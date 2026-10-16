@@ -1,3 +1,13 @@
+export function youtubeId(value) {
+ try {
+  const u=new URL(value),host=u.hostname.toLowerCase().replace(/^www\./,'');
+  if(u.protocol!=='https:'||u.username||u.password||u.port)return null;
+  const id=host==='youtu.be'?u.pathname.match(/^\/([\w-]{11})\/?$/)?.[1]:
+   ['youtube.com','m.youtube.com','youtube-nocookie.com'].includes(host)?
+    (u.pathname==='/watch'?u.searchParams.get('v'):u.pathname.match(/^\/(?:embed|shorts|live)\/([\w-]{11})\/?$/)?.[1]):null;
+  return /^[\w-]{11}$/.test(id||'')?id:null;
+ }catch{return null;}
+}
 export function videoSource(value) {
   try {
     const url = new URL(value);

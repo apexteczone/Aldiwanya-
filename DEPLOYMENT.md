@@ -2,7 +2,7 @@
 
 The existing directories remain `BackEnd` and `FrontEnd/aldiwanya-platform`.
 The latter contains both the student interface and admin dashboard. Node 24 LTS
-and MongoDB 8 are the tested runtime versions.
+and local MongoDB 9 are the runtime versions used for the lesson/payment tests.
 
 ## Install and start
 
@@ -63,23 +63,23 @@ HTTPS/proxy configuration require a deployment smoke test with your own settings
 
 ## Payments
 
-Checkout is deliberately unavailable for this initial release. The API returns
-503 / PAYMENTS_NOT_ENABLED and the student UI explains that payments are unavailable.
-There is no fake successful checkout and no client-side subscription activation.
-The server-only MyFatoorah adapter implements InitiatePayment, ExecutePayment and
-GetPaymentStatus. Credentials must never be sent to the browser. API mapping is
-tested with a mocked provider; no live provider charge has been made.
+Checkout, server verification and signed MyFatoorah V2 payment notifications are
+implemented. Checkout stays disabled by default until the server credentials and
+public HTTPS callback origins are configured. The local test harness simulates the
+external gateway; it cannot charge a card and is never imported by the production server.
 
-Before enabling payments implement and test server-calculated totals, persistent
-idempotent payment orders, verified provider settlement/webhooks, amount/currency/
-customer matching, replay protection, refunds and reconciliation. Redirects alone
-must never grant access. Do not reinterpret historical payment amounts: the legacy
-Payment.price_snapshot field is a major-unit amount; Plan.amountMinor uses minor
-units (KWD has 1000 minor units). Subscription.paymentOrderId now references Payment
-while retaining the field name and collection for compatibility; audit historical
-references before enabling settlement.
+See [LESSON-PAYMENTS.md](LESSON-PAYMENTS.md) for configuration, migration, callback
+validation, replay protection, reconciliation, and the remaining external checks.
+Redirects alone never activate access. Plan.amountMinor uses minor units (KWD has
+1000); the existing Payment.price_snapshot remains a major-unit snapshot.
 
-Provider reference: https://docs.myfatoorah.com/docs/execute-payment
+Production startup with provider credentials refuses missing payment uniqueness
+indexes. Run the reviewed `db:indexes` step before enabling checkout; it does not
+drop existing indexes or repair duplicate data automatically.
+
+Refunds, chargebacks and subscription cancellation are not automated. They require
+an operator workflow and provider-account configuration before a public paid launch.
+No real provider charge or refund has been made during this local implementation.
 
 ## Verification and initial-release limitations
 
@@ -87,15 +87,16 @@ Run `npm run lint`, `npm run build`, and `npm test` at the root. The integration
 suite requires a disposable local MongoDB at 127.0.0.1:27028; it creates and removes
 only uniquely named `aldiwanya_integration_*` databases. It never reads DB_URI from
 the caller. Tests cover authentication, authorization, canonical content CRUD,
-validated public PDF uploads, migration, reset-token replay and disabled checkout.
+validated public PDF uploads, migration, reset-token replay, lesson playback gating,
+verified payment settlement, retry/concurrency handling and disabled checkout.
 
 Storage analytics, global admin search, marketing/footer links, social login and
 newsletter integrations still require product configuration. Payment cancellation
-is intentionally unavailable until the financial workflow is implemented. Video
-delivery currently accepts HTTPS media URLs; a signed streaming/CDN integration is
-needed if link sharing must be prevented. Access to the URL through the API is
-restricted by subscription, but an already disclosed external URL cannot be revoked
-by this application. Upload signatures and size checks do not replace malware scanning.
+is intentionally unavailable until the financial workflow is implemented. Each lesson now stores one YouTube video ID extracted by the backend from its URL.
+A signed streaming/CDN integration is needed if link sharing must be prevented.
+Playback ID disclosure is restricted by subscription for paid lessons, but an
+already disclosed YouTube ID cannot be revoked by this application. The official
+YouTube iframe retains its branding and provider controls; it is not DRM. Upload signatures and size checks do not replace malware scanning.
 Removed/replaced PDF binaries are retained for recovery; review a retention policy
 before cleaning them up. These are explicit limits of the initial release, not
 claims of completed external integrations.
@@ -105,8 +106,8 @@ claims of completed external integrations.
 - Mayar content/module/plan/profile functionality and maryam admin/grade/PDF work
   share one Course and Lesson model. Course.grade references Grade; Lesson.courseId
   is canonical and optional moduleId retains structured module navigation.
-- Amna student components live inside the existing frontend, with real API auth,
-  library, profile and subscriptions instead of local demo identities.
+- The student interface uses the approved navy/blue visual identity within the
+  existing frontend, with real API authentication, library, profile and subscriptions.
 - `/api/v1` is canonical; legacy API routes remain available for existing clients.
 - All admin reads and writes require an authenticated Admin role. All PDFs are free and publicly served from `/uploads/pdfs`, including files uploaded before this change. The `/library` page and PDF list/download API require no login. Upload/edit/delete operations still require Admin.
 - Course/module/lesson deletion rejects dependent content rather than cascading
@@ -115,6 +116,6 @@ claims of completed external integrations.
 
 ## Public PDF policy and lesson creation
 
-The admin creates a Grade, a Course referencing that Grade, then a Lesson referencing that Course. The lesson form requires a course and has no module step; legacy modules and their APIs remain available for existing content.
+The admin creates a Grade, a Course referencing that Grade, then a Lesson referencing that Course. The unified lesson form requires a course and a YouTube URL and saves lesson details and the extracted video ID together. There is no separate Video model or admin video section; old admin video links redirect to lessons. Legacy modules and their APIs remain available for existing content. Before starting against a database containing old video documents, run `migrate:videos:check`, review the results, then `migrate:videos:apply` with writes stopped. See LESSON-PAYMENTS.md; the migration preserves the old records and refuses ambiguous one-to-many mappings.
 
 All PDF binaries in UPLOAD_DIR/pdfs are public, regardless of legacy isFreePreview or subscription state. Active records appear in the public library. Inactive, replaced or deleted records are removed from the listing but their retained binaries remain accessible by URL. This is deliberate for the requested public-folder policy. No database rewrite or physical file movement is needed. Do not store private documents in this directory.

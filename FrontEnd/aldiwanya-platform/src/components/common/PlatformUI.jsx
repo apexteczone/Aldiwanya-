@@ -160,11 +160,11 @@ export function PdfCard({ pdf, compact = false }) {
     </article>
   );
 }
-export function VideoCard({ video, preview = true }) {
+export function VideoCard({ video }) {
   return (
     <Link
       className="video-card"
-      to={`/courses/${video.courseId}${preview ? "/preview" : ""}?lesson=${video.lessonId}&video=${video._id}`}
+      to={"/lessons/"+video._id}
     >
       <div className="video-cover">
         {assetUrl(video.thumbnailUrl) ? (

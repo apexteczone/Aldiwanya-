@@ -8,7 +8,6 @@ import Lesson from '../../DB/models/Lesson.js';
 import PDF from '../../DB/models/PDF.js';
 import Subscription from '../../DB/models/Subscription.js';
 import Payment from '../../DB/models/Payment.js';
-import videoRouter from './admin.video.router.js';
 import validation from '../../middlewares/validation.middleware.js';
 const router=Router();
 router.patch('/password', rateLimit({windowMs:15*60*1000,limit:10,standardHeaders:'draft-8',legacyHeaders:false}), validation(changeAdminPasswordSchema), changeAdminPassword);
@@ -35,5 +34,4 @@ router.get('/payments',async(req,res)=>{
  const rows=await Payment.find().populate('user_id','fullName').populate('plan_id','title').select('-idempotency_key').lean();
  res.json({success:true,data:rows.map(p=>({id:p._id,student:p.user_id?.fullName||'Deleted user',course:p.plan_id?.title||'',amount:p.price_snapshot+' '+p.currency,amountValue:p.price_snapshot,currency:p.currency,methodType:p.provider||'unknown',method:p.provider||'—',date:p.created_at?.toISOString().slice(0,10),trx:p.provider_reference||'—',status:p.status==='succeeded'?'success':['failed','canceled'].includes(p.status)?'failed':'pending'}))});
 });
-router.use(videoRouter);
 export default router;

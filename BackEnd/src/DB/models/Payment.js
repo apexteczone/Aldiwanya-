@@ -14,6 +14,13 @@ const paymentSchema = new mongoose.Schema(
       required: true,
     },
 
+    amount_minor: {type:Number,min:1,validate:Number.isSafeInteger},
+    customer_email: {type:String,lowercase:true},
+    payment_method_id: Number,
+    checkout_url: String,
+    return_to: {type:String,default:'/dashboard'},
+    last_attempt: {type:String,enum:['unknown','pending','failed']},
+    open_user_id: {type:mongoose.Schema.Types.ObjectId,ref:'User',unique:true,sparse:true},
     price_snapshot: {
       type: Number,
       required: true,
@@ -52,6 +59,8 @@ const paymentSchema = new mongoose.Schema(
 
     provider_reference: {
       type: String,
+      unique: true,
+      sparse: true,
       trim: true,
     },
 

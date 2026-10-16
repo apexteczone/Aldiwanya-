@@ -21,7 +21,7 @@ const {default:ResetToken}=await import('../src/DB/models/PasswordResetToken.js'
 const {hash}=await import('../src/utils/hashing/hashing.js');
 const {migrate}=await import('../src/DB/migrate.js');
 const {createMyFatoorahClient}=await import('../src/Modules/Payment/myfatoorah.client.js');
-let server,base,adminToken,studentToken,studentId,gradeId,courseId,moduleId,lessonId,pdfId;
+let server,base,adminToken,studentToken,studentId,gradeId,courseId,moduleId,lessonId,freeLessonId,pdfId;
 const password=crypto.randomBytes(18).toString('base64url');
 async function request(method,route,body,token,headers={}){
  const h={...headers};if(token)h.Authorization='Bearer '+token;
@@ -67,7 +67,7 @@ test('grade, course, module and lesson share one canonical schema',async()=>{
  const course=await request('POST','/api/v1/admin/courses',{title:'Integration course',subject:'Math',grade:gradeId,status:'active'},adminToken);assert.equal(course.status,201,JSON.stringify(course));courseId=course.data._id;assert.equal(course.data.status,'published');
  const module=await request('POST','/api/v1/admin/modules/CreateModule',{title:'Module one',courseId},adminToken);assert.equal(module.status,201,JSON.stringify(module));moduleId=module.data._id;
  assert.equal((await request('PATCH','/api/v1/admin/modules/'+moduleId+'/publish',{},adminToken)).status,200);
- const lesson=await request('POST','/api/v1/admin/lessons',{title:'Module lesson',moduleId},adminToken);assert.equal(lesson.status,201,JSON.stringify(lesson));lessonId=lesson.data._id;assert.equal(lesson.data.courseId,courseId);
+ const lesson=await request('POST','/api/v1/admin/lessons',{youtubeUrl:'https://youtu.be/dQw4w9WgXcQ',title:'Module lesson',moduleId},adminToken);assert.equal(lesson.status,201,JSON.stringify(lesson));lessonId=lesson.data._id;assert.equal(lesson.data.courseId,courseId);
  assert.equal((await request('PATCH','/api/v1/admin/lessons/'+lessonId+'/publish',{},adminToken)).status,200);
  const detail=await request('GET','/api/v1/courses/'+courseId);assert.equal(detail.data.lessons.length,1);assert.equal(detail.data.modules[0].lessons.length,1);
  assert.equal((await request('DELETE','/api/v1/admin/courses/'+courseId,undefined,adminToken)).status,409);
@@ -76,45 +76,54 @@ test('grade, course, module and lesson share one canonical schema',async()=>{
 test('admin creates a grade, course and direct lesson without a module',async()=>{
  const grade=await request('POST','/api/v1/admin/grades/create',{name:'Direct course grade'},adminToken);assert.equal(grade.status,201);
  const course=await request('POST','/api/v1/admin/courses',{title:'Direct course',grade:grade.data._id,status:'published'},adminToken);assert.equal(course.status,201);
- const lesson=await request('POST','/api/v1/admin/lessons',{title:'Direct lesson',courseId:course.data._id,status:'published'},adminToken);assert.equal(lesson.status,201);assert.equal(lesson.data.courseId,course.data._id);assert.equal(lesson.data.moduleId,undefined);
+ const lesson=await request('POST','/api/v1/admin/lessons',{youtubeUrl:'https://youtu.be/dQw4w9WgXcQ',title:'Direct lesson',courseId:course.data._id,status:'published'},adminToken);assert.equal(lesson.status,201);assert.equal(lesson.data.courseId,course.data._id);assert.equal(lesson.data.moduleId,undefined);
  const detail=await request('GET','/api/v1/courses/'+course.data._id);assert.ok(detail.data.lessons.some(l=>l._id===lesson.data._id));
- assert.equal((await request('POST','/api/v1/admin/lessons',{title:'Missing course'},adminToken)).status,422);
- assert.equal((await request('POST','/api/v1/admin/lessons',{title:'Unknown course',courseId:new mongoose.Types.ObjectId().toString()},adminToken)).status,404);
+ assert.equal((await request('POST','/api/v1/admin/lessons',{youtubeUrl:'https://youtu.be/dQw4w9WgXcQ',title:'Missing course'},adminToken)).status,422);
+ assert.equal((await request('POST','/api/v1/admin/lessons',{youtubeUrl:'https://youtu.be/dQw4w9WgXcQ',title:'Unknown course',courseId:new mongoose.Types.ObjectId().toString()},adminToken)).status,404);
 });
-test('video access and publication are enforced on the server',async()=>{
- for(const accessLevel of ['free','paid']){const r=await request('POST','/api/v1/admin/videos',{title:accessLevel+' video',lessonId,videoUrl:'https://example.com/video.mp4',accessLevel,status:'published'},adminToken);assert.equal(r.status,201,JSON.stringify(r));}
- const videos=await request('GET','/api/v1/library/lessons/'+lessonId+'/videos',undefined,studentToken);assert.equal(videos.data.length,1);assert.equal(videos.data[0].accessLevel,'free');
+test('single lesson video access and publication are enforced on the server',async()=>{
+ const free=await request('POST','/api/v1/admin/lessons',{courseId,title:'Free preview',youtubeUrl:'https://youtu.be/aqz-KE-bpKQ',isFreePreview:true,status:'published'},adminToken);
+ assert.equal(free.status,201,JSON.stringify(free));freeLessonId=free.data._id;
+ assert.equal(free.data.videoId,'aqz-KE-bpKQ');
+ assert.equal((await request('GET','/api/v1/lessons/'+lessonId+'/playback')).status,401);
+ assert.equal((await request('GET','/api/v1/lessons/'+lessonId+'/playback',undefined,studentToken)).status,403);
+ const allowed=await request('GET','/api/v1/lessons/'+lessonId+'/playback',undefined,adminToken);
+ assert.equal(allowed.status,200);assert.equal(allowed.data.videoId,'dQw4w9WgXcQ');
+ const publicDetail=await request('GET','/api/v1/lessons/'+lessonId);
+ assert.equal(publicDetail.data.lesson.videoId,undefined);assert.equal(publicDetail.data.lesson.hasVideo,true);
+ const detail=await request('GET','/api/v1/courses/'+courseId);
+ assert.ok(detail.data.lessons.every(l=>l.videoId===undefined&&l.internalNotes===undefined));
+ assert.equal((await request('GET','/api/v1/admin/videos',undefined,adminToken)).status,404);
  await request('PATCH','/api/v1/admin/courses/'+courseId+'/hide',{},adminToken);
  assert.equal((await request('GET','/api/v1/courses/'+courseId)).status,404);
- assert.equal((await request('GET','/api/v1/library/lessons/'+lessonId+'/videos',undefined,studentToken)).status,404);
+ assert.equal((await request('GET','/api/v1/lessons/'+freeLessonId+'/playback')).status,404);
  await request('PATCH','/api/v1/admin/courses/'+courseId+'/publish',{},adminToken);
 });
 test('public previews and student activity respect publication, identity and paid access',async()=>{
- const previews=await request('GET','/api/v1/previews');assert.equal(previews.status,200);assert.equal(previews.data.length,1);assert.equal(previews.data[0].courseId,courseId);assert.equal(previews.data[0].videoUrl,undefined);
- const publicPlayback=await request('GET','/api/v1/library/lessons/'+lessonId+'/videos');assert.equal(publicPlayback.status,200);assert.equal(publicPlayback.data.length,1);assert.equal(publicPlayback.data[0].accessLevel,'free');
- assert.equal((await request('GET','/api/v1/library/lessons/'+lessonId+'/videos',undefined,'invalid')).status,401);
- const videoId=previews.data[0]._id;
- assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'favorite',id:videoId,enabled:true})).status,401);
- assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'favorite',id:videoId,enabled:true,userId:studentId},studentToken)).status,422);
- for(let i=0;i<2;i++)assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'favorite',id:videoId,enabled:true},studentToken)).status,200);
- let activity=await request('GET','/api/v1/student/activity',undefined,studentToken);assert.equal(activity.data.favoriteVideos.length,1);assert.equal(activity.data.favoriteVideos[0].videoUrl,undefined);
- assert.equal((await request('GET','/api/v1/student/activity',undefined,adminToken)).data.favoriteVideos.length,0);
+ const previews=await request('GET','/api/v1/previews');assert.equal(previews.status,200);assert.equal(previews.data.length,1);assert.equal(previews.data[0].courseId,courseId);assert.equal(previews.data[0].videoId,undefined);
+ const playback=await request('GET','/api/v1/lessons/'+freeLessonId+'/playback');assert.equal(playback.status,200);assert.equal(playback.data.videoId,'aqz-KE-bpKQ');
+ assert.equal((await request('GET','/api/v1/lessons/'+freeLessonId+'/playback',undefined,'invalid')).status,401);
+ assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'favorite',id:freeLessonId,enabled:true})).status,401);
+ assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'favorite',id:freeLessonId,enabled:true,userId:studentId},studentToken)).status,422);
+ for(let i=0;i<2;i++)assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'favorite',id:freeLessonId,enabled:true},studentToken)).status,200);
+ let activity=await request('GET','/api/v1/student/activity',undefined,studentToken);
+ assert.equal(activity.data.favoriteLessons.length,1);assert.equal(activity.data.favoriteLessons[0].videoId,undefined);
+ assert.equal((await request('GET','/api/v1/student/activity',undefined,adminToken)).data.favoriteLessons.length,0);
  assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'complete',id:lessonId,enabled:true},studentToken)).status,403);
- const direct=await request('POST','/api/v1/admin/lessons',{title:'Free activity lesson',courseId,status:'published'},adminToken);assert.equal(direct.status,201);
- const free=await request('POST','/api/v1/admin/videos',{title:'Public activity video',lessonId:direct.data._id,videoUrl:'https://example.com/free.mp4',accessLevel:'free',status:'published'},adminToken);assert.equal(free.status,201);
- assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'complete',id:direct.data._id,enabled:true},studentToken)).status,200);
+ assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'complete',id:freeLessonId,enabled:true},studentToken)).status,200);
  activity=await request('GET','/api/v1/student/activity',undefined,studentToken);assert.equal(activity.data.completedLessons.length,1);assert.ok(activity.data.startedCourses.includes(courseId));
- const {default:Lesson}=await import('../src/DB/models/Lesson.js');await Lesson.updateOne({_id:direct.data._id},{$set:{status:'draft'}});
+ await request('PATCH','/api/v1/admin/lessons/'+freeLessonId+'/hide',{},adminToken);
  assert.equal((await request('GET','/api/v1/student/activity',undefined,studentToken)).data.completedLessons.length,0);
- assert.equal((await request('GET','/api/v1/previews')).data.length,1);
- assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'complete',id:direct.data._id,enabled:true},studentToken)).status,404);
+ assert.equal((await request('GET','/api/v1/previews')).data.length,0);
+ assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'complete',id:freeLessonId,enabled:true},studentToken)).status,404);
+ await request('PATCH','/api/v1/admin/lessons/'+freeLessonId+'/publish',{},adminToken);
  await request('PATCH','/api/v1/admin/courses/'+courseId+'/hide',{},adminToken);
  assert.equal((await request('GET','/api/v1/previews')).data.length,0);
- assert.equal((await request('GET','/api/v1/student/activity',undefined,studentToken)).data.favoriteVideos.length,0);
+ assert.equal((await request('GET','/api/v1/student/activity',undefined,studentToken)).data.favoriteLessons.length,0);
  await request('PATCH','/api/v1/admin/courses/'+courseId+'/publish',{},adminToken);
- assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'favorite',id:videoId,enabled:false},studentToken)).status,200);
- assert.equal((await request('GET','/api/v1/student/activity',undefined,studentToken)).data.favoriteVideos.length,0);
- const courses=await request('GET','/api/v1/courses');assert.equal(courses.data.find(c=>c._id===courseId).lessonsCount,1);
+ assert.equal((await request('PATCH','/api/v1/student/activity',{kind:'favorite',id:freeLessonId,enabled:false},studentToken)).status,200);
+ assert.equal((await request('GET','/api/v1/student/activity',undefined,studentToken)).data.favoriteLessons.length,0);
+ const courses=await request('GET','/api/v1/courses');assert.equal(courses.data.find(c=>c._id===courseId).lessonsCount,2);
 });
 test('monthly plans can be created from the dashboard without enabling checkout',async()=>{
  const monthly=await request('POST','/api/v1/plan/CreatePlan',{title:'Monthly test',durationMonths:1,amountMinor:1500,currency:'KWD'},adminToken);assert.equal(monthly.status,201,JSON.stringify(monthly));
@@ -145,7 +154,7 @@ test('CORS, malformed input and missing routes fail safely',async()=>{
 });
 test('payments remain unavailable and never create subscriptions',async()=>{
  assert.equal((await request('GET','/api/v1/payments/capabilities')).data.checkoutEnabled,false);
- assert.equal((await request('POST','/api/v1/payments/checkout',{planId:'fake',paid:true},studentToken)).status,503);
+ assert.equal((await request('POST','/api/v1/payments/checkout',{planId:new mongoose.Types.ObjectId().toString(),paymentMethodId:2,idempotencyKey:crypto.randomUUID()},studentToken)).status,503);
  assert.equal((await request('GET','/api/v1/library/subscriptions',undefined,studentToken)).data.length,0);
 });
 test('MyFatoorah adapter sends documented server requests, without making live calls',async()=>{
@@ -173,14 +182,14 @@ test('existing subscription unlocks paid content and appears in the profile',asy
  const payment=await Payment.create({user_id:studentId,plan_id:plan._id,price_snapshot:2.5,duration_snapshot:3,currency:'KWD',status:'succeeded'});
  const subscription=await Subscription.create({userId:studentId,planId:plan._id,paymentOrderId:payment._id,startsAt:new Date(Date.now()-60000),endsAt:new Date(Date.now()+60000)});
  assert.equal((await request('GET','/api/v1/user/me',undefined,studentToken)).data.subscriptions[0].planId.title,plan.title);
- assert.equal((await request('GET','/api/v1/library/lessons/'+lessonId+'/videos',undefined,studentToken)).data.length,2);
+ assert.equal((await request('GET','/api/v1/lessons/'+lessonId+'/playback',undefined,studentToken)).status,200);
  const paidPdf=await fetch(base+'/api/v1/library/pdfs/'+pdfId+'/download',{headers:{Authorization:'Bearer '+studentToken}});
  assert.equal(paidPdf.status,200);await paidPdf.arrayBuffer();
  const payments=await request('GET','/api/v1/admin/payments',undefined,adminToken);assert.equal(payments.data[0].status,'success');assert.equal(payments.data[0].amountValue,2.5);
  const subscriptions=await request('GET','/api/v1/admin/subscriptions',undefined,adminToken);assert.equal(subscriptions.data[0].student,'Updated Student');
  await Subscription.updateOne({_id:subscription._id},{$set:{endsAt:new Date(Date.now()-1000)}});
  const stillFree=await fetch(base+'/api/v1/library/pdfs/'+pdfId+'/download');assert.equal(stillFree.status,200);await stillFree.arrayBuffer();
- assert.equal((await request('GET','/api/v1/library/lessons/'+lessonId+'/videos',undefined,studentToken)).data.length,1);
+ assert.equal((await request('GET','/api/v1/lessons/'+lessonId+'/playback',undefined,studentToken)).status,403);
 });
 test('built frontend serves direct routes while unknown API routes remain JSON',async()=>{
  process.env.SERVE_FRONTEND='true';
@@ -190,6 +199,7 @@ test('built frontend serves direct routes while unknown API routes remain JSON',
  try {
   for(const route of ['/','/dashboard','/admin/courses','/library','/courses','/login','/register','/forgot-password','/reset-password','/plans','/previews','/account','/subscriptions']) {
    const r=await fetch(origin+route,{headers:{Accept:'text/html'}});
+   assert.equal(r.headers.get('referrer-policy'),'strict-origin-when-cross-origin');
    assert.equal(r.status,200);assert.match(await r.text(),/<div id="root">/);
   }
   const api=await fetch(origin+'/api/v1/not-found',{headers:{Accept:'text/html'}});
@@ -247,22 +257,22 @@ test('password reset consumes the token once and revokes existing sessions',asyn
 test('admin reference forms preserve private notes, ordering, uploads and plan descriptions',async()=>{
  await User.create({fullName:'Reference Student',email:'reference@example.com',phoneNumber:'+96550000088',passwordHash:hash({plainText:password}),role:'Student',termsAccepted:true});
  const referenceStudentToken=(await request('POST','/api/v1/auth/login',{identifier:'reference@example.com',password})).data.accessToken;
- const created=await request('POST','/api/v1/admin/lessons',{title:'Reference lesson',courseId,position:7,description:'Public description',internalNotes:'Internal staff-only note',status:'published'},adminToken);
+ const created=await request('POST','/api/v1/admin/lessons',{youtubeUrl:'https://youtu.be/dQw4w9WgXcQ',title:'Reference lesson',courseId,position:7,description:'Public description',internalNotes:'Internal staff-only note',status:'published'},adminToken);
  assert.equal(created.status,201,JSON.stringify(created));const id=created.data._id;assert.equal(created.data.position,7);
  const adminRows=await request('GET','/api/v1/admin/lessons',undefined,adminToken);assert.equal(adminRows.data.find(l=>l._id===id).internalNotes,'Internal staff-only note');
  const publicLesson=await request('GET','/api/v1/lessons/'+id);assert.equal(publicLesson.data.lesson.internalNotes,undefined);
  const publicCourse=await request('GET','/api/v1/courses/'+courseId);assert.equal(publicCourse.data.lessons.find(l=>l._id===id).internalNotes,undefined);
  assert.equal((await request('PATCH','/api/v1/admin/lessons/'+id,{position:2,internalNotes:'Updated note'},adminToken)).status,200);
  assert.equal((await request('PATCH','/api/v1/admin/lessons/'+id,{position:-1},adminToken)).status,422);
- const data=new FormData();data.set('title','Reference uploaded video');data.set('lessonId',id);data.set('videoUrl','https://www.youtube.com/watch?v=dQw4w9WgXcQ');data.set('description','Video description');data.set('accessLevel','paid');data.set('status','published');
+ const data=new FormData();data.set('title','Reference updated lesson');data.set('youtubeUrl','https://www.youtube.com/watch?v=aqz-KE-bpKQ');data.set('description','Video description');
  data.set('thumbnail',new Blob([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aXioAAAAASUVORK5CYII=','base64')],{type:'image/png'}),'thumb.png');
- const video=await request('POST','/api/v1/admin/videos',data,adminToken);assert.equal(video.status,201,JSON.stringify(video));assert.match(video.data.thumbnailUrl,/^\/uploads\/images\/.+\.png$/);assert.equal(video.data.description,'Video description');
- assert.equal((await request('GET','/api/v1/library/lessons/'+id+'/videos')).data.length,0);
- assert.equal((await request('PATCH','/api/v1/admin/videos/'+video.data._id,{videoUrl:'javascript:alert(1)'},adminToken)).status,422);
- assert.equal((await request('PATCH','/api/v1/admin/videos/'+video.data._id,{videoUrl:'https://vimeo.com/123456',description:'Updated'},referenceStudentToken)).status,403);
- assert.equal((await request('PATCH','/api/v1/admin/videos/'+video.data._id,{videoUrl:'https://vimeo.com/123456',description:'Updated'},adminToken)).status,200);
- assert.equal((await request('DELETE','/api/v1/admin/lessons/'+id,undefined,adminToken)).status,409);
- const invalid=new FormData();invalid.set('title','Bad upload');invalid.set('lessonId',id);invalid.set('videoUrl','https://example.com/v.mp4');invalid.set('thumbnail',new Blob(['<svg onload="alert(1)"></svg>'],{type:'image/png'}),'fake.png');assert.equal((await request('POST','/api/v1/admin/videos',invalid,adminToken)).status,422);
+ const updated=await request('PATCH','/api/v1/admin/lessons/'+id,data,adminToken);
+ assert.equal(updated.status,200,JSON.stringify(updated));assert.match(updated.data.thumbnailUrl,/^\/uploads\/images\/.+\.png$/);assert.equal(updated.data.description,'Video description');assert.equal(updated.data.videoId,'aqz-KE-bpKQ');
+ assert.equal((await request('GET','/api/v1/lessons/'+id+'/playback')).status,401);
+ assert.equal((await request('PATCH','/api/v1/admin/lessons/'+id,{youtubeUrl:'javascript:alert(1)'},adminToken)).status,422);
+ assert.equal((await request('PATCH','/api/v1/admin/lessons/'+id,{youtubeUrl:'https://youtu.be/aqz-KE-bpKQ'},referenceStudentToken)).status,403);
+ const invalid=new FormData();invalid.set('title','Bad upload');invalid.set('courseId',courseId);invalid.set('youtubeUrl','https://youtu.be/aqz-KE-bpKQ');invalid.set('thumbnail',new Blob(['<svg onload="alert(1)"></svg>'],{type:'image/png'}),'fake.png');assert.equal((await request('POST','/api/v1/admin/lessons',invalid,adminToken)).status,422);
+ assert.equal((await request('DELETE','/api/v1/admin/lessons/'+id,undefined,adminToken)).status,200);
  const plan=await request('POST','/api/v1/plan/CreatePlan',{title:'Six month term',durationMonths:6,amountMinor:1500,currency:'KWD',description:'Term description'},adminToken);assert.equal(plan.status,201,JSON.stringify(plan));
  assert.equal((await request('PATCH','/api/v1/plan/'+plan.data._id+'/update',{description:'Edited term'},adminToken)).data.description,'Edited term');
  assert.equal((await request('POST','/api/v1/plan/CreatePlan',{title:'Invalid duration',durationMonths:2,amountMinor:1500,currency:'KWD'},adminToken)).status,422);
@@ -276,4 +286,168 @@ test('video embeds use only trusted provider URLs',async()=>{
  assert.equal(videoSource('https://youtu.be/dQw4w9WgXcQ').kind,'embed');
  assert.equal(videoSource('https://vimeo.com/123456/abc123').src,'https://player.vimeo.com/video/123456?h=abc123');
  assert.equal(videoSource('https://youtube.com.evil.test/watch?v=dQw4w9WgXcQ').kind,'file');
+});
+
+test('Mayar URL extraction validates hosts, formats and keeps private IDs out of catalogs',async()=>{
+ const {extractYouTubeVideoId}=await import('../src/Modules/Lesson/youtube.js');
+ const {youtubeId}=await import('../../FrontEnd/aldiwanya-platform/src/utils/videoSource.js');
+ for(const url of ['https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=30','https://youtu.be/dQw4w9WgXcQ?si=share','https://m.youtube.com/shorts/dQw4w9WgXcQ','https://youtube.com/live/dQw4w9WgXcQ','https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ']){
+  assert.equal(extractYouTubeVideoId(url),'dQw4w9WgXcQ');assert.equal(youtubeId(url),'dQw4w9WgXcQ');
+ }
+ for(const url of ['http://youtu.be/dQw4w9WgXcQ','https://youtube.com.evil.test/watch?v=dQw4w9WgXcQ','https://evil.test@youtube.com/watch?v=dQw4w9WgXcQ','https://youtube.com:444/watch?v=dQw4w9WgXcQ','https://youtube.com/channel/dQw4w9WgXcQ','https://youtu.be/short','https://vimeo.com/123456']){
+  assert.throws(()=>extractYouTubeVideoId(url));assert.equal(youtubeId(url),null);
+ }
+ assert.equal((await request('POST','/api/v1/admin/lessons',{title:'Missing video',courseId},adminToken)).status,422);
+ const mayar=await request('POST','/api/v1/admin/lessons/CreateLessonWithVideo',{title:'Mayar alias',courseId,youtubeUrl:'https://youtube.com/live/dQw4w9WgXcQ'},adminToken);
+ assert.equal(mayar.status,201);assert.equal(mayar.data.videoId,'dQw4w9WgXcQ');
+ const bad=await request('PATCH','/api/v1/admin/lessons/'+mayar.data._id,{videoId:'aqz-KE-bpKQ'},adminToken);assert.equal(bad.status,422);
+ assert.equal((await request('GET','/api/v1/lessons/'+mayar.data._id+'/playback',undefined,adminToken)).status,404);
+});
+
+test('legacy video migration preserves records and refuses ambiguous or unsupported data',async()=>{
+ const {migrateLessonVideos}=await import('../src/DB/migrate-lesson-videos.js');
+ const db=mongoose.connection.db,lesson=new mongoose.Types.ObjectId(),video=new mongoose.Types.ObjectId(),duplicate=new mongoose.Types.ObjectId();
+ await db.collection('lessons').insertOne({_id:lesson,courseId:new mongoose.Types.ObjectId(courseId),title:'Legacy video lesson',status:'published'});
+ await db.collection('videos').insertOne({_id:video,lessonId:lesson,title:'Preserved legacy title',videoUrl:'https://youtu.be/aqz-KE-bpKQ',accessLevel:'free',status:'published',processingStatus:'ready',durationSeconds:60});
+ await db.collection('studentactivities').updateOne({userId:new mongoose.Types.ObjectId(studentId)},{$addToSet:{favoriteVideos:video}},{upsert:true});
+ const dry=await migrateLessonVideos();assert.equal(dry.videos,1);assert.equal(dry.applied,false);assert.equal((await db.collection('lessons').findOne({_id:lesson})).videoId,undefined);
+ await db.collection('videos').insertOne({_id:duplicate,lessonId:lesson,videoUrl:'https://youtu.be/dQw4w9WgXcQ'});
+ assert.equal((await migrateLessonVideos({apply:true})).problems[0].reason,'multiple_videos_require_manual_review');
+ assert.equal((await db.collection('lessons').findOne({_id:lesson})).videoId,undefined);
+ await db.collection('videos').deleteOne({_id:duplicate}); // Only test-created duplicate.
+ await db.collection('videos').updateOne({_id:video},{$set:{videoUrl:'https://vimeo.com/123456'}});
+ assert.equal((await migrateLessonVideos({apply:true})).problems[0].reason,'unsupported_video_url');
+ await db.collection('videos').updateOne({_id:video},{$set:{videoUrl:'https://youtu.be/aqz-KE-bpKQ'}});
+ assert.equal((await migrateLessonVideos({apply:true})).applied,true);
+ const result=await db.collection('lessons').findOne({_id:lesson});
+ assert.equal(result.videoId,'aqz-KE-bpKQ');assert.equal(result.isFreePreview,true);assert.equal(result.title,'Legacy video lesson');
+ assert.ok(await db.collection('lesson_video_migration_backups').findOne({_id:lesson}));
+ assert.ok(await db.collection('videos').findOne({_id:video}));
+ assert.ok((await db.collection('studentactivities').findOne({userId:new mongoose.Types.ObjectId(studentId)})).favoriteLessons.some(id=>id.equals(lesson)));
+ assert.equal((await migrateLessonVideos({apply:true})).videos,0);
+});
+
+test('MyFatoorah checkout, signed settlement and recovery use real database records with an isolated provider double',async(t)=>{
+ const {createPaymentService,signaturePayload,addCalendarMonths}=await import('../src/Modules/Payment/payment.service.js');
+ const {paymentConfig,safeReturnPath,safePaymentUrl}=await import('../src/Modules/Payment/payment.config.js');
+ const {default:Payment}=await import('../src/DB/models/Payment.js');
+ const {default:Subscription}=await import('../src/DB/models/Subscription.js');
+ const {default:Plan}=await import('../src/DB/models/Plan.js');
+ const {default:PaymentLock}=await import('../src/DB/models/PaymentLock.js');
+ const {default:PaymentEvent}=await import('../src/DB/models/paymentEvent.js');
+ await Promise.all([Payment.init(),Subscription.init(),PaymentLock.init(),PaymentEvent.init()]);
+ const user=await User.create({fullName:'Payment test student',email:'payment@example.com',phoneNumber:'+96550000091',passwordHash:hash({plainText:password}),role:'Student',termsAccepted:true});
+ const token=(await request('POST','/api/v1/auth/login',{identifier:user.email,password})).data.accessToken;
+ const plan=await Plan.findOne({durationMonths:1});
+ const invoices=new Map();let executions=0,statusCalls=0,timeoutNext=false;
+ const secret=crypto.randomBytes(32).toString('hex');
+ const config={enabled:true,configured:true,sandbox:true,currency:'KWD',frontendOrigin:'https://test.example',apiOrigin:'https://api.test.example',webhookSecret:secret};
+ const client={
+  initiatePayment:async()=>({PaymentMethods:[{PaymentMethodId:2,PaymentMethodAr:'بطاقة اختبار',IsDirectPayment:false},{PaymentMethodId:3,IsDirectPayment:true}]}),
+  executePayment:async args=>{
+   executions++;const invoiceId=String(100000+executions);
+   assert.equal(args.currency,'KWD');assert.match(args.callbackUrl,/^https:\/\/test.example\/payment\/return\?orderId=[a-f0-9]{24}$/);
+   assert.equal(args.webhookUrl,'https://api.test.example/api/v1/payments/webhook');
+   invoices.set(args.reference,{InvoiceId:Number(invoiceId),InvoiceStatus:'Pending',CustomerReference:args.reference,InvoiceValue:args.amount,InvoiceDisplayValue:args.amount.toFixed(3)+' KD',CustomerEmail:args.customerEmail,InvoiceTransactions:[]});
+   if(timeoutNext){timeoutNext=false;throw new Error('Simulated ambiguous timeout after provider created invoice');}
+   return {InvoiceId:Number(invoiceId),PaymentURL:'https://demo.myfatoorah.com/pay/'+invoiceId};
+  },
+  getPaymentStatus:async(key,type='PaymentId')=>{
+   statusCalls++;const invoice=[...invoices.values()].find(i=>type==='CustomerReference'?i.CustomerReference===String(key):type==='InvoiceId'?String(i.InvoiceId)===String(key):i.InvoiceTransactions.some(p=>p.PaymentId===String(key)));
+   if(!invoice)throw new Error('Unknown provider invoice',{cause:502});
+   return structuredClone(invoice);
+  },
+ };
+ const service=createPaymentService({client,config});
+ const app=express();await bootstrap(app,express,{connect:false,paymentOptions:{client,config}});
+ const site=app.listen(0,'127.0.0.1');await new Promise(resolve=>site.once('listening',resolve));
+ const oldBase=base;base='http://127.0.0.1:'+site.address().port;
+ let order,invoice;
+ function signedBody(i){
+  const body={Event:{Code:1,Reference:'unsigned-reference'},Data:{Invoice:{Id:String(i.InvoiceId),Status:'PAID',ExternalIdentifier:i.CustomerReference},Transaction:{Status:'SUCCESS',PaymentId:i.InvoiceTransactions[0].PaymentId}}};
+  return {body,signature:crypto.createHmac('sha256',secret).update(signaturePayload(body.Data)).digest('base64')};
+ }
+ function paid(i){i.InvoiceStatus='Paid';i.InvoiceTransactions=[{PaymentId:'pay-'+i.InvoiceId,TransactionStatus:'Succss'}];}
+ try{
+  await t.test('checkout uses server prices, rejects injected fields and creates one invoice under retries',async()=>{
+   const {verifyPaymentIndexes}=await import('../src/Modules/Payment/payment.service.js');
+   await verifyPaymentIndexes();
+   await Payment.collection.dropIndex('open_user_id_1');
+   try{await assert.rejects(()=>verifyPaymentIndexes(),/Required payment index is missing/);}
+   finally{await Payment.createIndexes();}
+   assert.equal(paymentConfig({PAYMENTS_ENABLED:'true',MYFATOORAH_API_KEY:'test'}).enabled,false);
+   assert.equal(safeReturnPath('//evil.example'),'/dashboard');assert.equal(safePaymentUrl('https://myfatoorah.com.evil.test/pay'),null);
+   assert.equal((await request('POST','/api/v1/payments/checkout',{})).status,401);
+   assert.equal((await request('POST','/api/v1/payments/checkout',{planId:String(plan._id),paymentMethodId:2,idempotencyKey:crypto.randomUUID(),amount:1},token)).status,422);
+   const methods=await request('GET','/api/v1/payments/methods?planId='+plan._id,undefined,token);assert.equal(methods.status,200);assert.equal(methods.data.length,1);
+   const body={planId:String(plan._id),paymentMethodId:2,idempotencyKey:crypto.randomUUID(),returnTo:'/lessons/'+lessonId};
+   const results=await Promise.all([request('POST','/api/v1/payments/checkout',body,token),request('POST','/api/v1/payments/checkout',body,token)]);
+   results.forEach(r=>assert.equal(r.status,201,JSON.stringify(r)));assert.equal(results[0].data.id,results[1].data.id);assert.equal(executions,1);
+   order=await Payment.findById(results[0].data.id);invoice=invoices.get(String(order._id));
+   assert.equal(order.amount_minor,plan.amountMinor);assert.equal(invoice.InvoiceValue,plan.amountMinor/1000);
+   assert.equal((await request('GET','/api/v1/payments/orders/'+order._id,undefined,adminToken)).status,404);
+   assert.equal((await request('POST','/api/v1/payments/orders/'+order._id+'/verify',{},token)).data.status,'pending');
+   assert.equal((await request('GET','/api/v1/lessons/'+lessonId+'/playback',undefined,token)).status,403);
+  });
+  await t.test('forged callbacks, incorrect amount, currency, customer and order never grant access',async()=>{
+   const calls=statusCalls;
+   assert.equal((await request('POST','/api/v1/payments/webhook',{Event:{Code:1},Data:{}},undefined,{'myfatoorah-signature':'forged'})).status,401);assert.equal(statusCalls,calls);
+   const saved=structuredClone(invoice);paid(invoice);
+   for(const [key,value] of [['InvoiceValue',0.001],['InvoiceDisplayValue','1.500 USD'],['CustomerReference',new mongoose.Types.ObjectId().toString()],['CustomerEmail','other@example.com']]){
+    const original=invoice[key];invoice[key]=value;
+    await assert.rejects(()=>service.reconcile(order),{cause:409});invoice[key]=original;
+    assert.equal(await Subscription.countDocuments({userId:user._id}),0);
+   }
+   Object.assign(invoice,saved);
+   assert.equal((await request('GET','/api/v1/payments/callback?status=paid&orderId='+order._id,undefined,token)).status,404);
+   assert.equal(await Subscription.countDocuments({userId:user._id}),0);
+  });
+  await t.test('a verified signed webhook activates exactly one subscription and unlocks the lesson',async()=>{
+   paid(invoice);const {body,signature}=signedBody(invoice);
+   const results=await Promise.all([request('POST','/api/v1/payments/webhook',body,undefined,{'myfatoorah-signature':signature}),request('POST','/api/v1/payments/webhook',body,undefined,{'myfatoorah-signature':signature})]);
+   results.forEach(r=>assert.equal(r.status,200,JSON.stringify(r)));
+   assert.equal(await Subscription.countDocuments({paymentOrderId:order._id}),1);
+   assert.equal(await PaymentEvent.countDocuments({payment_order_id:order._id,processing_status:'processed'}),1);
+   assert.equal((await request('GET','/api/v1/lessons/'+lessonId+'/playback',undefined,token)).status,200);
+   assert.equal((await request('POST','/api/v1/payments/orders/'+order._id+'/verify',{paymentId:invoice.InvoiceTransactions[0].PaymentId},token)).data.status,'succeeded');
+  });
+  await t.test('renewal extends existing access once and survives an interrupted settlement lock',async()=>{
+   const previous=await Subscription.findOne({paymentOrderId:order._id});
+   const next=await service.checkout(user,{planId:String(plan._id),paymentMethodId:2,idempotencyKey:crypto.randomUUID(),returnTo:'https://evil.example'});
+   assert.equal(next.returnTo,'/dashboard');
+   const nextOrder=await Payment.findById(next.id),nextInvoice=invoices.get(String(next.id));paid(nextInvoice);
+   await PaymentLock.create({_id:user._id,paymentId:next.id}); // Simulated prior process crash.
+   await Promise.all([service.reconcile(nextOrder),service.reconcile(nextOrder)]);
+   const renewed=await Subscription.findOne({paymentOrderId:next.id});
+   assert.equal(renewed.startsAt.getTime(),previous.endsAt.getTime());
+   assert.ok(renewed.endsAt>renewed.startsAt);assert.equal(await Subscription.countDocuments({paymentOrderId:next.id}),1);
+   assert.equal(await PaymentLock.countDocuments({_id:user._id}),0);
+   assert.equal(addCalendarMonths(new Date('2026-01-31T10:00:00Z'),1).toISOString(),'2026-02-28T10:00:00.000Z');
+  });
+  await t.test('ambiguous provider timeouts reconcile by reference and never charge a second invoice',async()=>{
+   // The previous process died after marking an earlier order paid, before releasing its lock.
+   await PaymentLock.create({_id:user._id,paymentId:order._id});
+   timeoutNext=true;
+   const payload={planId:String(plan._id),paymentMethodId:2,idempotencyKey:crypto.randomUUID(),returnTo:'/lessons/'+lessonId};
+   const pending=await service.checkout(user,payload),count=executions;
+   assert.equal(pending.status,'created');assert.equal(pending.checkoutUrl,null);
+   const same=await service.checkout(user,payload);assert.equal(String(same.id),String(pending.id));assert.equal(executions,count);
+   const ambiguous=await Payment.findById(pending.id),data=invoices.get(String(pending.id));paid(data);
+   assert.equal((await service.reconcile(ambiguous)).status,'succeeded');assert.equal(executions,count);
+   assert.equal(await PaymentLock.countDocuments({_id:user._id}),0);
+   assert.equal(await Subscription.countDocuments({paymentOrderId:pending.id}),1);
+  });
+  await t.test('cancellation and failed attempts do not activate access; late success wins',async()=>{
+   const pending=await service.checkout(user,{planId:String(plan._id),paymentMethodId:2,idempotencyKey:crypto.randomUUID()});
+   const row=await Payment.findById(pending.id),data=invoices.get(String(pending.id));
+   const count=await Subscription.countDocuments({userId:user._id});
+   data.InvoiceTransactions=[{PaymentId:'failure-'+data.InvoiceId,TransactionStatus:'Failed'}];
+   assert.equal((await service.reconcile(row)).status,'pending');
+   assert.equal(await Subscription.countDocuments({userId:user._id}),count);
+   data.InvoiceStatus='Canceled';assert.equal((await service.reconcile(row)).status,'canceled');
+   assert.equal(await Subscription.countDocuments({userId:user._id}),count);
+   paid(data);assert.equal((await service.reconcile(await Payment.findById(row._id))).status,'succeeded');
+   assert.equal(await Subscription.countDocuments({paymentOrderId:row._id}),1);
+  });
+ }finally{base=oldBase;await new Promise(resolve=>site.close(resolve));}
 });

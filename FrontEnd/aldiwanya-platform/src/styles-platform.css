@@ -2577,3 +2577,22 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Keep the full provider frame visible; site controls sit outside it. */
+.video-stage:has(.lesson-video-player), .admin-reference .ref-video-stage:has(.lesson-video-player) { aspect-ratio:auto; overflow:visible; }
+.lesson-video-player { background:#00172f;color:#fff;border-radius:8px;overflow:hidden;width:100%; }
+.lesson-video-frame { aspect-ratio:16/9;width:100%;min-height:200px; }
+.lesson-video-frame iframe { display:block;width:100%;height:100%;border:0; }
+.lesson-player-controls { display:flex;align-items:center;gap:8px;padding:10px 14px;background:#062847;color:#fff; }
+.lesson-player-controls > span { flex:1;font-size:13px;overflow-wrap:anywhere; }
+.lesson-player-controls button { width:36px;height:36px;border:1px solid #28567f;border-radius:7px;display:grid;place-items:center;color:#fff;background:#0b416f;cursor:pointer; }
+.lesson-player-controls button:disabled { opacity:.5;cursor:wait; }
+.lesson-player-controls button:focus-visible { outline:3px solid #61bbff;outline-offset:2px; }
+.player-status { padding:12px;color:#d3eaff;font-size:13px; }
+.player-status button { text-decoration:underline;margin-inline-start:8px; }
+.lesson-video-player:fullscreen { display:flex;flex-direction:column;justify-content:center; }
+.lesson-video-player:fullscreen .lesson-video-frame { max-height:calc(100vh - 70px); }
+.payment-result { max-width:680px;margin:auto;text-align:center;padding:42px 28px;display:grid;justify-items:center;gap:20px; }
+.payment-result > svg { color:#0878df; }
+.payment-result p { line-height:1.9; }
+.access-badge { color:#0673cf;font-size:13px;font-weight:700; }

@@ -1,182 +1,20 @@
-import express from "express";
-
-import authentication, {
-  allowTo,
-} from "../../middlewares/authMiddleware.js";
-
-import validation from "../../middlewares/validation.middleware.js";
-
-import * as lessonController from "./lesson.controller.js";
-
-import {
-  getLessonByIdSchema,
-  createLessonSchema,
-  updateLessonSchema,
-  lessonIdSchema,
-  courseLessonsSchema,
-  reorderLessonsSchema,
-} from "./lesson.validation.js";
-
-
-const router = express.Router();
-router.use(authentication(), allowTo(["Admin"]));
-
-
-// ==================================================
-// PUBLIC ROUTES
-// ==================================================
-
-
-// GET ALL LESSONS
-
-router.get(
-  "/",
-  lessonController.getLessons
-);
-
-
-// GET LESSONS BY COURSE
-
-router.get(
-  "/course/:courseId",
-  validation(
-    courseLessonsSchema,
-    "params"
-  ),
-  lessonController.getLessonsByCourse
-);
-
-
-// GET LESSON BY ID
-
-router.get(
-  "/:id",
-  validation(
-    getLessonByIdSchema,
-    "params"
-  ),
-  lessonController.getLessonById
-);
-
-
-// ==================================================
-// ADMIN ROUTES
-// ==================================================
-
-
-// REORDER LESSONS
-
-router.patch(
-  ["/reorder", "/order"],
-
-  authentication(),
-
-  allowTo(["admin","Admin"]),
-
-  validation(
-    reorderLessonsSchema,
-    "body"
-  ),
-
-  lessonController.reorderLessons
-);
-
-
-// CREATE LESSON
-
-router.post(
-  ["/", "/createLesson"],
-
-  authentication(),
-
-  allowTo(["admin","Admin"]),
-
-  validation(
-    createLessonSchema,
-    "body"
-  ),
-
-  lessonController.createLesson
-);
-
-
-// UPDATE LESSON
-
-router.patch(
-  "/:id",
-
-  authentication(),
-
-  allowTo(["admin","Admin"]),
-
-  validation(
-    lessonIdSchema,
-    "params"
-  ),
-
-  validation(
-    updateLessonSchema,
-    "body"
-  ),
-
-  lessonController.updateLesson
-);
-
-
-// DELETE LESSON
-
-router.delete(
-  "/:id",
-
-  authentication(),
-
-  allowTo(["admin","Admin"]),
-
-  validation(
-    lessonIdSchema,
-    "params"
-  ),
-
-  lessonController.deleteLesson
-);
-
-
-// PUBLISH LESSON
-
-router.patch(
-  "/:id/publish",
-
-  authentication(),
-
-  allowTo(["admin","Admin"]),
-
-  validation(
-    lessonIdSchema,
-    "params"
-  ),
-
-  lessonController.publishLesson
-);
-
-
-// HIDE LESSON
-
-router.patch(
-  "/:id/hide",
-
-  authentication(),
-
-  allowTo(["admin","Admin"]),
-
-  validation(
-    lessonIdSchema,
-    "params"
-  ),
-
-  lessonController.hideLesson
-);
-
-
+import {Router} from 'express';
+import authentication,{allowTo} from '../../middlewares/authMiddleware.js';
+import validation from '../../middlewares/validation.middleware.js';
+import {uploadImage} from '../../middlewares/upload.middleware.js';
+import * as controller from './lesson.controller.js';
+import * as schema from './lesson.validation.js';
+const router=Router();
+router.use(authentication(),allowTo(['Admin']));
+router.get('/',controller.getLessons);
+router.get('/course/:courseId',validation(schema.courseLessonsSchema,'params'),controller.getLessonsByCourse);
+router.get('/:id',validation(schema.lessonIdSchema,'params'),controller.getLessonById);
+router.patch(['/reorder','/order'],validation(schema.reorderLessonsSchema),controller.reorderLessons);
+// Only server-generated filenames may become public thumbnails.
+const thumbnail=(req,res,next)=>{if(req.file) req.body.thumbnailUrl='/uploads/images/'+req.file.filename;next();};
+router.post(['/','/createLesson','/CreateLessonWithVideo'],uploadImage.single('thumbnail'),validation(schema.createLessonSchema),thumbnail,controller.createLesson);
+router.patch('/:id',validation(schema.lessonIdSchema,'params'),uploadImage.single('thumbnail'),validation(schema.updateLessonSchema),thumbnail,controller.updateLesson);
+router.delete('/:id',validation(schema.lessonIdSchema,'params'),controller.deleteLesson);
+router.patch('/:id/publish',validation(schema.lessonIdSchema,'params'),controller.publishLesson);
+router.patch('/:id/hide',validation(schema.lessonIdSchema,'params'),controller.hideLesson);
 export default router;
-
-
