@@ -5,11 +5,12 @@ import { BrowserRouter } from "react-router-dom";
 import './index.css'
 import App from './App.jsx'
 import {PlatformProvider} from './context/PlatformContext';
+import {NotificationsProvider} from './context/NotificationsContext';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <PlatformProvider><App /></PlatformProvider>
+      <PlatformProvider><NotificationsProvider><App /></NotificationsProvider></PlatformProvider>
     </BrowserRouter>
   </React.StrictMode>
 )

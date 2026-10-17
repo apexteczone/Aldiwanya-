@@ -10,6 +10,8 @@ import PDF from '../../DB/models/PDF.js';
 import Subscription from '../../DB/models/Subscription.js';
 import Payment from '../../DB/models/Payment.js';
 import validation from '../../middlewares/validation.middleware.js';
+import {revokeRealtime} from '../User/realtime.js';
+import {removeAvatarFile} from '../User/avatar.controller.js';
 const router=Router();
 router.get('/settings',getSettings);
 router.patch('/settings',validation(settingsSchema),saveSettings);
@@ -26,6 +28,7 @@ router.delete('/students/:id',idParams,async(req,res)=>{
  if(await Subscription.exists({userId:req.params.id})||await Payment.exists({user_id:req.params.id})) throw new Error('Student has financial records; deletion is not allowed',{cause:409});
  const user=await User.findOneAndDelete({_id:req.params.id,role:'Student'});
  if(!user) throw new Error('Student not found',{cause:404});
+ revokeRealtime(user._id);await removeAvatarFile(user.avatarUrl);
  res.json({success:true});
 });
 router.get('/subscriptions',async(req,res)=>{

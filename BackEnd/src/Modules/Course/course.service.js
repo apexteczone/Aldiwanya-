@@ -4,6 +4,7 @@ import Grade from '../../DB/models/Grade.js';
 import Module from '../../DB/models/Module.js';
 import Lesson from '../../DB/models/Lesson.js';
 import PDF from '../../DB/models/PDF.js';
+import {notifyCourse} from '../User/notification.service.js';
 const check=id=>{if(!mongoose.isValidObjectId(id)) throw new Error('Invalid ID',{cause:422});};
 const published=value=>value==='active'?'published':value==='inactive'?'draft':value;
 export async function resolveGrade(value) {
@@ -21,14 +22,15 @@ export async function getCourseById(id) {check(id);const c=await Course.findById
 export async function createCourse(data,file) {
  const grade=await resolveGrade(data.grade);
  const last=await Course.findOne({grade}).sort({position:-1});
- return Course.create({...data,grade,status:published(data.status)||'draft',position:last?last.position+1:0,coverImage:file?'/uploads/images/'+file.filename:''});
+ const course=await Course.create({...data,grade,status:published(data.status)||'draft',position:last?last.position+1:0,coverImage:file?'/uploads/images/'+file.filename:''});
+ await notifyCourse(course);return course;
 }
 export async function updateCourse(id,data,file) {
  check(id);const c=await Course.findById(id);if(!c)throw new Error('Course not found',{cause:404});
  if(data.grade!==undefined)data.grade=await resolveGrade(data.grade);
  if(data.status)data.status=published(data.status);
  if(file)data.coverImage='/uploads/images/'+file.filename;
- Object.assign(c,data);return c.save();
+ Object.assign(c,data);await c.save();await notifyCourse(c);return c;
 }
 export async function deleteCourse(id) {
  check(id);

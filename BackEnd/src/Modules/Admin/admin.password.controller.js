@@ -2,6 +2,7 @@ import Joi from 'joi';
 import User from '../../DB/models/User.js';
 import PasswordResetToken from '../../DB/models/PasswordResetToken.js';
 import {compare, hash} from '../../utils/hashing/hashing.js';
+import {revokeRealtime} from '../User/realtime.js';
 
 export const changeAdminPasswordSchema = Joi.object({
   currentPassword: Joi.string().max(256).required(),
@@ -24,6 +25,7 @@ export async function changeAdminPassword(req, res) {
     _id: user._id, role: 'Admin', passwordHash: user.passwordHash, tokenVersion: req.user.tokenVersion,
   }, {$set: {passwordHash: hash({plainText: newPassword})}, $inc: {tokenVersion: 1}});
   if (!changed) throw new Error('انتهت الجلسة. سجّل الدخول مجددًا.', {cause: 401});
+  revokeRealtime(user._id);
   await PasswordResetToken.deleteMany({userId: user._id});
   res.json({success: true, message: 'تم تغيير كلمة المرور. سجّل الدخول بالكلمة الجديدة.'});
 }

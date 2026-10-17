@@ -3,7 +3,7 @@ import UserModel from "../../DB/models/User.js";
 export const getMyProfile = async (userId) => {
   const user = await UserModel.findById(userId)
     .select(
-      "fullName email phoneNumber role gradePreference createdAt"
+      "fullName email phoneNumber role gradePreference createdAt avatarUrl"
     )
     .lean();
 
@@ -31,7 +31,7 @@ export const updateMyProfile = async (
     }
   )
     .select(
-      "fullName email phoneNumber role gradePreference createdAt"
+      "fullName email phoneNumber role gradePreference createdAt avatarUrl"
     )
     .lean();
 

@@ -1,112 +1,50 @@
-import { useState, useEffect } from 'react';
-import axios from '../../../../services/api';
-import { Search, Bell, ChevronDown, Menu } from 'lucide-react';
-
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Search, Menu } from "lucide-react";
+import usePlatform from "../../../../hooks/usePlatform";
+import AccountAvatar from "../../../common/AccountAvatar";
+import NotificationBell from "../../../common/NotificationBell";
 export const Navbar = ({ onSearch, isMobileOpen, setIsMobileOpen }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [notificationsCount] = useState(0);
-  const [user, setUser] = useState({
-    name: 'جاري التحميل...',
-    role: 'مدير المنصة',
-    avatar: ''
-  });
-
-  // جلب بيانات الحساب الحالي عند الفتح عبر Axios
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('/user/me', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        if (response.data) {
-          setUser({
-            name: response.data.data.user.fullName,
-            role: response.data.data.user.role === 'Admin' ? 'مدير المنصة' : 'مستخدم',
-            avatar: ''
-          });
-        }
-      } catch (error) {
-        console.error('فشل جلب بيانات البروفايل:', error);
-      }
-    };
-
-    fetchUserProfile();
-  }, []);
-
-  
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    if (onSearch) {
-      onSearch(value);
-    }
-  };
-
+  const [searchQuery, setSearchQuery] = useState("");
+  const { profile } = usePlatform();
+  const user = profile?.user;
   return (
     <header className="bg-navy-950 text-white h-16 px-4 md:px-6 flex items-center justify-between border-b border-border-dark select-none">
-      
-      
-      <div className="flex items-center gap-3 flex-1 md:flex-initial">
-       
+      <div className="flex items-center gap-3 flex-1 md:flex-initial min-w-0">
         <button
           onClick={() => setIsMobileOpen?.(!isMobileOpen)}
-          className="md:hidden p-2 rounded-xl bg-navy-900 border border-border-dark text-text-muted hover:text-white transition-colors"
+          className="md:hidden p-2 rounded-xl bg-navy-900 border border-border-dark text-text-muted"
           aria-label="فتح القائمة الجانبية"
         >
           <Menu className="w-5 h-5" />
         </button>
-
-       
-        <div className="relative w-full sm:w-80 md:w-96">
+        <div className="relative w-full sm:w-80 md:w-96 hidden sm:block">
           <input
             type="text"
             value={searchQuery}
-            onChange={handleSearchChange}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              onSearch?.(e.target.value);
+            }}
             placeholder="إبحث عن طالب، كورس، اشتراك..."
-            className="w-full bg-navy-900 text-white text-xs sm:text-sm rounded-xl pr-9 sm:pr-10 pl-3 sm:pl-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-border-dark placeholder:text-text-muted transition-all"
+            className="w-full bg-navy-900 text-white text-xs sm:text-sm rounded-xl pr-10 pl-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-border-dark placeholder:text-text-muted"
           />
           <Search className="w-4 h-4 text-text-muted absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
       </div>
-
-     
-      <div className="flex items-center gap-2 sm:gap-4 shrink-0 mr-2">
-        {/* زر التنبيهات */}
-        <div className="relative">
-          <button 
-            className="p-2 rounded-xl bg-navy-900 border border-border-dark text-text-muted hover:text-white transition-colors"
-            aria-label="التنبيهات"
-          >
-            <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-          {notificationsCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
-              {notificationsCount}
-            </span>
-          )}
-        </div>
-
-       
-        <div className="flex items-center gap-2 sm:gap-3 pr-2 sm:pr-3 border-r border-border-dark cursor-pointer group">
-          <ChevronDown className="w-4 h-4 text-text-muted group-hover:text-white transition-colors hidden sm:block" />
-          <div className="text-left hidden md:block">
-            <h4 className="text-sm font-bold text-white leading-snug">{user.name}</h4>
-            <p className="text-xs text-text-muted">{user.role}</p>
+      <div className="flex items-center gap-3 shrink-0 mr-2">
+        <NotificationBell />
+        <Link
+          to="/admin/settings"
+          className="admin-account-identity"
+          aria-label="إعدادات حساب الأدمن"
+        >
+          <div>
+            <strong>{user?.fullName || "جاري التحميل…"}</strong>
+            <small>مدير المنصة</small>
           </div>
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-500 border-2 border-blue-600 overflow-hidden flex items-center justify-center font-bold text-white shadow-md text-xs sm:text-base">
-            {user.avatar ? (
-              <img
-                src={user.avatar} 
-                alt={user.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span>{user.name?.charAt(0) || 'أ'}</span>
-            )}
-          </div>
-        </div>
+          <AccountAvatar user={user} />
+        </Link>
       </div>
     </header>
   );

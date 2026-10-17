@@ -1,4 +1,6 @@
 import Router from "express";
+import {rateLimit} from 'express-rate-limit';
+import {avatarUpload,uploadAvatar,deleteAvatar} from './avatar.controller.js';
 
 import authentication, {
   allowTo,
@@ -18,6 +20,9 @@ import {
 } from "./user.validation.js";
 
 const router = Router();
+const avatarLimit=rateLimit({windowMs:60000,limit:15,standardHeaders:'draft-8',legacyHeaders:false});
+router.post('/me/avatar',authentication(),avatarLimit,avatarUpload,uploadAvatar);
+router.delete('/me/avatar',authentication(),avatarLimit,deleteAvatar);
 
 router.get(
   "/me",

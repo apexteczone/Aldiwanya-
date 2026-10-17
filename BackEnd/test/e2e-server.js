@@ -82,8 +82,12 @@ app.post("/__test/payments/:invoice/paid", (req, res) => {
 await bootstrap(app, express, { paymentOptions: { client, config } });
 await seedAdmin();
 const server = app.listen(Number(process.env.PORT), "127.0.0.1");
+const {attachRealtime}=await import('../src/Modules/User/realtime.js');
+const io=attachRealtime(server);
 server.once("listening", () => process.send?.("ready"));
 async function stop() {
+  io.disconnectSockets(true);
+  io.engine.close();
   server.closeAllConnections();
   await new Promise((resolve) => server.close(resolve));
   assert.match(mongoose.connection.name, /^aldiwanya_e2e_[a-f0-9]{16}$/);

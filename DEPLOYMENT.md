@@ -85,6 +85,11 @@ No real provider charge or refund has been made during this local implementation
 
 ### Admin platform settings
 
+Account avatars and Socket.IO notifications are documented in
+[ACCOUNT-NOTIFICATIONS.md](ACCOUNT-NOTIFICATIONS.md), including the `/socket.io/`
+proxy route, persistent avatar storage, and notification indexes required before
+production startup. Development uses the existing frontend/API ports.
+
 `/admin/settings` stores general platform information and social links in the
 singleton `PlatformSettings` document. The administrator-only API is
 `GET /api/v1/admin/settings` and `PATCH /api/v1/admin/settings`.

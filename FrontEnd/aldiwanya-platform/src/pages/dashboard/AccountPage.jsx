@@ -4,6 +4,7 @@ import usePlatform from "../../hooks/usePlatform";
 import api from "../../services/api";
 import { errorMessage } from "../../utils/platform";
 import { Hero } from "../../components/common/PlatformUI";
+import AvatarEditor from '../../components/common/AvatarEditor';
 export default function AccountPage() {
   const { profile, refresh } = usePlatform(),
     [values, setValues] = useState({
@@ -33,6 +34,7 @@ export default function AccountPage() {
     <>
       <Hero title="إعدادات حسابك" subtitle="حدّث بياناتك الشخصية" compact />
       <section className="site-container section">
+        <AvatarEditor/>
         <form className="site-panel account-form" onSubmit={submit}>
           <h2>بيانات الحساب</h2>
           {[

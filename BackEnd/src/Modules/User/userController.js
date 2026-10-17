@@ -1,5 +1,6 @@
 import {getSubscriptions} from "../Subscription/subscription.service.js";
 import * as userServices from "./user.service.js";
+import {accountChanged} from './realtime.js';
 
 export const getMyProfile = async (
   req,
@@ -27,6 +28,7 @@ export const updateMyProfile = async (
       req.user._id,
       req.body
     );
+  accountChanged(req.user._id);
 
   return res.status(200).json({
     success: true,

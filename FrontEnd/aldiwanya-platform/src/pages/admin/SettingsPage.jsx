@@ -3,6 +3,7 @@ import { FileText, Share2, Save, LockKeyhole, ChevronDown } from "lucide-react";
 import api from "../../services/api";
 import { errorMessage } from "../../utils/platform";
 import "./platform-settings.css";
+import AvatarEditor from '../../components/common/AvatarEditor';
 
 function AdminPasswordSettings() {
   const [values, setValues] = useState({
@@ -301,6 +302,7 @@ export default function SettingsPage() {
           {notice}
         </p>
       )}
+      <AvatarEditor/>
       <section
         className="platform-settings-panel"
         aria-labelledby="general-settings-title"

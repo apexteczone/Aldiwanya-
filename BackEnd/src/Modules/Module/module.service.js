@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import ModuleModel from "../../DB/models/Module.js";
 import CourseModel from "../../DB/models/Course.js";
 import LessonModel from "../../DB/models/Lesson.js";
+import {notifyLesson} from '../User/notification.service.js';
 
 // Check ID
 const checkId = (id, name) => {
@@ -225,6 +226,7 @@ export const publishModule = async (
     module.status = "published";
 
     await module.save();
+    for(const lesson of await LessonModel.find({moduleId:module._id,status:'published'}))await notifyLesson(lesson);
 
     return res.status(200).json({
       success: true,

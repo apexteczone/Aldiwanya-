@@ -159,6 +159,83 @@ test('public previews and student activity respect publication, identity and pai
  assert.equal((await request('GET','/api/v1/student/activity',undefined,studentToken)).data.favoriteLessons.length,0);
  const courses=await request('GET','/api/v1/courses');assert.equal(courses.data.find(c=>c._id===courseId).lessonsCount,2);
 });
+test('account avatars validate decoded images, replace old files atomically and remain account-owned',async()=>{
+ const {default:sharp}=await import('sharp');
+ const image=await sharp({create:{width:40,height:40,channels:3,background:'#0078ff'}}).png().toBuffer();
+ const form=(buffer=image,type='image/png')=>{const body=new FormData();body.append('avatar',new Blob([buffer],{type}),'avatar.png');return body;};
+ assert.equal((await request('POST','/api/v1/user/me/avatar',form())).status,401);
+ const first=await request('POST','/api/v1/user/me/avatar',form(),studentToken);assert.equal(first.status,200,JSON.stringify(first));
+ const url=first.data.avatarUrl;assert.match(url,/^\/uploads\/avatars\/[a-f\d-]+\.webp$/);
+ const file=path.join(process.env.UPLOAD_DIR,'avatars',path.basename(url));
+ const metadata=await sharp(await fs.readFile(file)).metadata();assert.equal(metadata.format,'webp');assert.equal(metadata.exif,undefined);
+ assert.equal((await request('GET','/api/v1/user/me',undefined,studentToken)).data.user.avatarUrl,url);
+ const invalid=await request('POST','/api/v1/user/me/avatar',form(Buffer.from('<svg onload="alert(1)"></svg>'),'image/png'),studentToken);assert.equal(invalid.status,422);
+ const large=await request('POST','/api/v1/user/me/avatar',form(Buffer.alloc(5*1024*1024+1)),studentToken);assert.equal(large.status,413);
+ assert.equal((await User.findById(studentId)).avatarUrl,url);await fs.access(file);
+ const changed=await request('POST','/api/v1/user/me/avatar',form(),studentToken);assert.equal(changed.status,200);
+ await assert.rejects(()=>fs.access(file),{code:'ENOENT'});assert.equal((await fetch(base+url)).status,404);
+ const parallel=await Promise.all([request('POST','/api/v1/user/me/avatar',form(),studentToken),request('POST','/api/v1/user/me/avatar',form(),studentToken)]);
+ parallel.forEach(r=>assert.equal(r.status,200));const current=(await User.findById(studentId)).avatarUrl;
+ assert.deepEqual(await fs.readdir(path.join(process.env.UPLOAD_DIR,'avatars')),[path.basename(current)]);
+ const adminImage=await request('POST','/api/v1/user/me/avatar',form(),adminToken);assert.equal(adminImage.status,200);
+ assert.notEqual(adminImage.data.avatarUrl,current);assert.equal((await User.findById(studentId)).avatarUrl,current);
+ const malicious=form();malicious.append('userId',String(studentId));assert.equal((await request('POST','/api/v1/user/me/avatar',malicious,adminToken)).status,400);
+ assert.equal((await request('PATCH','/api/v1/user/me',{avatarUrl:'/uploads/avatars/fake.webp'},studentToken)).status,422);
+ assert.equal((await request('DELETE','/api/v1/user/me/avatar',undefined,studentToken)).status,200);
+ assert.equal((await User.findById(studentId)).avatarUrl,'');await assert.rejects(()=>fs.access(path.join(process.env.UPLOAD_DIR,'avatars',path.basename(current))),{code:'ENOENT'});
+ assert.equal((await request('DELETE','/api/v1/user/me/avatar',undefined,adminToken)).status,200);
+ assert.equal((await fs.readdir(path.join(process.env.UPLOAD_DIR,'avatars'))).length,0);
+});
+
+test('Socket.IO notifications are private, durable, replay-safe and revoke with the session',async()=>{
+ const {io:connect}=await import('socket.io-client');
+ const {attachRealtime}=await import('../src/Modules/User/realtime.js');
+ const {enqueueNotification,retryNotifications,verifyNotificationIndexes}=await import('../src/Modules/User/notification.service.js');
+ const {default:Notification}=await import('../src/DB/models/Notification.js');
+ const {default:Event}=await import('../src/DB/models/NotificationEvent.js');
+ const {default:jwt}=await import('jsonwebtoken');
+ await Notification.init();
+ await verifyNotificationIndexes();
+ const io=attachRealtime(server),sockets=[];
+ const socketFor=(token,origin=process.env.FRONTEND_URL)=>{const socket=connect(base,{auth:{token},extraHeaders:{Origin:origin},transports:['websocket'],reconnection:false,timeout:2000});sockets.push(socket);return socket;};
+ const once=(socket,event)=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Timed out: '+event)),4000);socket.once(event,(...args)=>{clearTimeout(timer);resolve(args);});});
+ try{
+  const invalid=socketFor('invalid');assert.equal((await once(invalid,'connect_error'))[0].message,'UNAUTHORIZED');
+  const wrongOrigin=socketFor(studentToken,'https://attacker.example');await once(wrongOrigin,'connect_error');
+  const student=socketFor(studentToken),admin=socketFor(adminToken);await Promise.all([once(student,'connect'),once(admin,'connect')]);
+  assert.equal((await request('GET','/api/v1/notifications')).status,401);
+  const adminRead=await request('GET','/api/v1/notifications',undefined,adminToken);
+  const registered=adminRead.data.items.find(n=>n.type==='student_registered');assert.ok(registered);
+  assert.equal((await request('PATCH','/api/v1/notifications/'+registered._id+'/read',{},studentToken)).status,404);
+  const studentRead=await request('GET','/api/v1/notifications',undefined,studentToken);
+  assert.ok(studentRead.data.items.some(n=>n.type==='course_published'));assert.ok(studentRead.data.items.some(n=>n.type==='lesson_published'));
+  assert.ok(studentRead.data.items.every(n=>n.type!=='student_registered'));
+  let adminSignals=0;admin.on('notifications:changed',()=>adminSignals++);
+  const update=once(student,'notifications:changed');
+  await enqueueNotification({_id:'private-test',audience:'user',recipient:studentId,type:'test',title:'إشعار خاص',message:'خاص بالطالب',href:'/dashboard'});await update;
+  assert.equal(adminSignals,0);
+  const before=await Notification.countDocuments({recipient:studentId,eventKey:'private-test'});
+  await Promise.all([enqueueNotification({_id:'private-test',audience:'user',recipient:studentId,type:'test',title:'إشعار خاص',message:'خاص بالطالب',href:'/dashboard'}),retryNotifications()]);
+  assert.equal(before,1);assert.equal(await Notification.countDocuments({recipient:studentId,eventKey:'private-test'}),1);
+  const item=await Notification.findOne({eventKey:'private-test',recipient:studentId});
+  assert.equal((await request('PATCH','/api/v1/notifications/'+item._id+'/read',{},studentToken)).status,200);
+  assert.ok((await request('GET','/api/v1/notifications',undefined,studentToken)).data.items.find(n=>n._id===String(item._id)).readAt);
+  student.disconnect();
+  await Event.create({_id:'offline-event',audience:'user',recipient:studentId,type:'test',title:'إشعار أثناء الغياب',message:'محفوظ',href:'/dashboard'});await retryNotifications();
+  const reconnected=socketFor(studentToken);await once(reconnected,'connect');
+  assert.ok((await request('GET','/api/v1/notifications',undefined,studentToken)).data.items.some(n=>n.title==='إشعار أثناء الغياب'));
+  for(let i=0;i<22;i++)await enqueueNotification({_id:'page-'+i,audience:'user',recipient:studentId,type:'test',title:'إشعار '+i,message:'اختبار التصفح',href:'/dashboard'});
+  const page=await request('GET','/api/v1/notifications',undefined,studentToken);assert.equal(page.data.items.length,20);assert.ok(page.data.nextCursor);
+  const next=await request('GET','/api/v1/notifications?before='+page.data.nextCursor,undefined,studentToken);assert.ok(next.data.items.length);assert.ok(next.data.items.every(n=>!page.data.items.some(p=>p._id===n._id)));
+  await request('PATCH','/api/v1/notifications/read-all',{},studentToken);assert.equal((await request('GET','/api/v1/notifications',undefined,studentToken)).data.unreadCount,0);
+  const user=await User.findById(studentId),short=jwt.sign({id:String(user._id),tokenVersion:user.tokenVersion},process.env.JWT_SECRET,{expiresIn:1});
+  const expiring=socketFor(short);await once(expiring,'connect');await once(expiring,'session:expired');
+  const disconnected=once(reconnected,'disconnect');await request('POST','/api/v1/auth/logout',{},studentToken);await disconnected;
+  const revoked=socketFor(studentToken);assert.equal((await once(revoked,'connect_error'))[0].message,'UNAUTHORIZED');
+  studentToken=(await request('POST','/api/v1/auth/login',{identifier:user.email,password})).data.accessToken;
+ }finally{sockets.forEach(socket=>socket.disconnect());io.disconnectSockets(true);io.engine.close();}
+});
+
 test('monthly plans can be created from the dashboard without enabling checkout',async()=>{
  const monthly=await request('POST','/api/v1/plan/CreatePlan',{title:'Monthly test',durationMonths:1,amountMinor:1500,currency:'KWD'},adminToken);assert.equal(monthly.status,201,JSON.stringify(monthly));
  assert.ok((await request('GET','/api/v1/plan/getActivePlans')).data.some(p=>p.durationMonths===1));
@@ -530,9 +607,13 @@ test('MyFatoorah checkout, signed settlement and recovery use real database reco
    const results=await Promise.all([request('POST','/api/v1/payments/webhook',body,undefined,{'myfatoorah-signature':signature}),request('POST','/api/v1/payments/webhook',body,undefined,{'myfatoorah-signature':signature})]);
    results.forEach(r=>assert.equal(r.status,200,JSON.stringify(r)));
    assert.equal(await Subscription.countDocuments({paymentOrderId:order._id}),1);
+   const {default:Notification}=await import('../src/DB/models/Notification.js');
+   assert.equal(await Notification.countDocuments({recipient:user._id,eventKey:'payment-student:'+order._id}),1);
+   assert.ok(await Notification.exists({type:'payment_succeeded',eventKey:'payment-admin:'+order._id}));
    assert.equal(await PaymentEvent.countDocuments({payment_order_id:order._id,processing_status:'processed'}),1);
    assert.equal((await request('GET','/api/v1/lessons/'+lessonId+'/playback',undefined,token)).status,200);
    assert.equal((await request('POST','/api/v1/payments/orders/'+order._id+'/verify',{paymentId:invoice.InvoiceTransactions[0].PaymentId},token)).data.status,'succeeded');
+   assert.equal(await Notification.countDocuments({recipient:user._id,eventKey:'payment-student:'+order._id}),1);
   });
   await t.test('renewal extends existing access once and survives an interrupted settlement lock',async()=>{
    const previous=await Subscription.findOne({paymentOrderId:order._id});

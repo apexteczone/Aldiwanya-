@@ -5,6 +5,7 @@ import Module from '../../DB/models/Module.js';
 import PDF from '../../DB/models/PDF.js';
 import StudentActivity from '../../DB/models/StudentActivity.js';
 import {extractYouTubeVideoId} from './youtube.js';
+import {notifyLesson} from '../User/notification.service.js';
 const check=id=>{if(!mongoose.isValidObjectId(id)) throw new Error('Invalid ID',{cause:422});};
 const privateFields = '+internalNotes +videoId';
 export const getLessons=()=>Lesson.find().select(privateFields).populate('courseId','title').populate('moduleId','title').sort({position:1,_id:1});
@@ -23,14 +24,14 @@ export async function createLesson(data){
   const fields=withVideo(data);await resolveParents(fields);
   if(!fields.videoId)throw new Error('رابط الفيديو مطلوب.',{cause:422});
   const last=await Lesson.findOne({courseId:fields.courseId}).sort({position:-1});
-  return Lesson.create({...fields,position:fields.position??(last?last.position+1:0)});
+  const lesson=await Lesson.create({...fields,position:fields.position??(last?last.position+1:0)});await notifyLesson(lesson);return lesson;
 }
 export async function updateLesson(id,data){
   const lesson=await getLessonById(id);
   const fields={...lesson.toObject(),...withVideo(data)};
   await resolveParents(fields);
   if(fields.status==='published'&&!fields.videoId)throw new Error('أضف رابط الفيديو قبل نشر الدرس.',{cause:422});
-  Object.assign(lesson,fields);return lesson.save();
+  Object.assign(lesson,fields);await lesson.save();await notifyLesson(lesson);return lesson;
 }
 export async function deleteLesson(id){
   const lesson=await getLessonById(id);

@@ -53,6 +53,7 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    avatarUrl: {type:String,default:'',maxlength:200},
 
     gradePreference: {
       type: Number,

@@ -5,6 +5,7 @@ import PaymentEvent from "../../DB/models/paymentEvent.js";
 import PaymentLock from "../../DB/models/PaymentLock.js";
 import Subscription from "../../DB/models/Subscription.js";
 import Plan from "../../DB/models/Plan.js";
+import {notifyPayment} from '../User/notification.service.js';
 import { createMyFatoorahClient } from "./myfatoorah.client.js";
 import {
   paymentConfig,
@@ -357,6 +358,7 @@ export function createPaymentService({
   }
   async function reconcile(order, { paymentId, invoice } = {}) {
     if (order.status === "succeeded") {
+      await notifyPayment(order);
       await PaymentLock.deleteOne({ _id: order.user_id, paymentId: order._id });
       return publicOrder(order);
     }
@@ -411,6 +413,7 @@ export function createPaymentService({
       )
         throw new Error("Payment is not settled yet", { cause: 409 });
       await settle(order);
+      await notifyPayment(order);
     } else if (data.InvoiceStatus === "Canceled") {
       await Payment.updateOne(
         { _id: order._id, status: { $ne: "succeeded" } },

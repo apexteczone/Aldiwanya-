@@ -13,6 +13,7 @@ import {
   User,
 } from "lucide-react";
 import usePlatform from "../../hooks/usePlatform";
+import AccountAvatar from '../../components/common/AccountAvatar';
 import useResource from "../../hooks/useResource";
 import { activeSubscription, date, price } from "../../utils/platform";
 import {
@@ -60,9 +61,7 @@ export default function DashboardPage() {
       <section className="site-container dashboard-layout section">
         <aside className="student-sidebar">
           <div className="profile-card">
-            <div className="avatar">
-              <User size={43} />
-            </div>
+            <AccountAvatar user={user} size={82}/>
             <h2>{user.fullName}</h2>
             <p>{user.role === "Admin" ? "مدير المنصة" : "طالب"}</p>
             <Link to="/account">

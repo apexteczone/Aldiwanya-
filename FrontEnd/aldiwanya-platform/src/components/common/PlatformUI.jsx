@@ -27,6 +27,8 @@ import {
   X,
 } from "lucide-react";
 import usePlatform from "../../hooks/usePlatform";
+import AccountAvatar from './AccountAvatar';
+import NotificationBell from './NotificationBell';
 import { assetUrl, price } from "../../utils/platform";
 import { API_BASE_URL } from "../../services/api";
 import "../../styles-platform.css";
@@ -371,12 +373,11 @@ export function PlatformLayout() {
             </button>
           </form>
           <div className="header-account">
+            {profile&&<NotificationBell/>}
             {profile ? (
               <details>
                 <summary>
-                  <span className="avatar small">
-                    <User size={17} />
-                  </span>
+                  <AccountAvatar user={profile.user} size={34}/>
                   <span>{profile.user.fullName}</span>
                 </summary>
                 <div className="account-menu">

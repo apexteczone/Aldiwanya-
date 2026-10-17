@@ -1,461 +1,255 @@
 import UserModel from "../../DB/models/User.js";
-import { hash , compare} from "../../utils/hashing/hashing.js";
-import PasswordResetTokenModel from "../../DB/models/PasswordResetToken.js"
+import { hash, compare } from "../../utils/hashing/hashing.js";
+import PasswordResetTokenModel from "../../DB/models/PasswordResetToken.js";
 import crypto from "crypto";
-import {generateToken} from "../../utils/token/token.js";
+import { generateToken } from "../../utils/token/token.js";
 import { sendPasswordResetEmail } from "../../utils/Email/email.js";
-
-
-
-
+import {enqueueNotification} from '../User/notification.service.js';
+import {revokeRealtime} from '../User/realtime.js';
 
 // REGISTER
-export const userRegister =
-  async (
-    req,
-    res,
-    next
-  ) => {
+export const userRegister = async (req, res, next) => {
+  const { fullName, email, phoneNumber, password, termsAccepted } = req.body;
 
-    const {
-      fullName,
-      email,
-      phoneNumber,
-      password,
-      termsAccepted,
-    } = req.body;
+  const existingEmail = await UserModel.findOne({
+    email,
+  });
 
+  if (existingEmail) {
+    return next(
+      new Error("Email already exists", {
+        cause: 409,
+      }),
+    );
+  }
 
-    const existingEmail =
-      await UserModel.findOne({
-        email,
-      });
+  const existingPhone = await UserModel.findOne({
+    phoneNumber,
+  });
 
+  if (existingPhone) {
+    return next(
+      new Error("Phone number already exists", {
+        cause: 409,
+      }),
+    );
+  }
 
-    if (existingEmail) {
+  const passwordHash = hash({
+    plainText: password,
+  });
 
-      return next(
-        new Error(
-          "Email already exists",
-          {
-            cause: 409,
-          }
-        )
-      );
+  const user = await UserModel.create({
+    fullName,
 
-    }
+    email,
 
+    phoneNumber,
 
-    const existingPhone =
-      await UserModel.findOne({
-        phoneNumber,
-      });
+    passwordHash,
 
+    termsAccepted,
 
-    if (existingPhone) {
+    role: "Student",
 
-      return next(
-        new Error(
-          "Phone number already exists",
-          {
-            cause: 409,
-          }
-        )
-      );
+    termsVersion: "v1",
+  });
 
-    }
+  await enqueueNotification({_id:'registration:'+user._id,audience:'Admin',type:'student_registered',title:'طالب جديد',message:'انضم '+user.fullName+' إلى المنصة.',href:'/admin/students'});
+  return res.status(201).json({
+    success: true,
 
+    data: {
+      id: user._id,
 
-    const passwordHash =
-      hash({
-        plainText:
-          password,
-      });
+      fullName: user.fullName,
 
+      email: user.email,
 
-    const user =
-      await UserModel.create({
+      phoneNumber: user.phoneNumber,
 
-        fullName,
+      role: user.role,
 
-        email,
-
-        phoneNumber,
-
-        passwordHash,
-
-        termsAccepted,
-
-        role: "Student",
-
-        termsVersion: "v1",
-
-      });
-
-
-    return res.status(201).json({
-
-      success: true,
-
-      data: {
-
-        id:
-          user._id,
-
-        fullName:
-          user.fullName,
-
-        email:
-          user.email,
-
-        phoneNumber:
-          user.phoneNumber,
-
-        role:
-          user.role,
-
-        createdAt:
-          user.createdAt,
-
-      },
-
-    });
-
-  };
-
-
+      createdAt: user.createdAt,
+    },
+  });
+};
 
 // LOGIN
 
-export const userLogin =
-  async (
-    req,
-    res,
-    next
-  ) => {
+export const userLogin = async (req, res, next) => {
+  const { identifier, password, rememberMe } = req.body;
 
-    const {
-      identifier,
-      password,
-      rememberMe,
-    } = req.body;
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
 
+  const query = isEmail
+    ? {
+        email: identifier.toLowerCase().trim(),
+      }
+    : {
+        phoneNumber: identifier.trim(),
+      };
 
-    const isEmail =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        .test(identifier);
+  const user = await UserModel.findOne(query).select("+passwordHash");
 
+  if (!user) {
+    return next(
+      new Error("Invalid login details", {
+        cause: 401,
+      }),
+    );
+  }
 
-    const query = isEmail
-      ? {
-          email:
-            identifier
-              .toLowerCase()
-              .trim(),
-        }
-      : {
-          phoneNumber:
-            identifier.trim(),
-        };
+  const passwordCorrect = compare({
+    plainText: password,
 
+    hash: user.passwordHash,
+  });
 
-    const user =
-      await UserModel
-        .findOne(query)
-        .select(
-          "+passwordHash"
-        );
+  if (!passwordCorrect) {
+    return next(
+      new Error("Invalid login details", {
+        cause: 401,
+      }),
+    );
+  }
 
+  const accessToken = generateToken({
+    id: user._id.toString(),
 
-    if (!user) {
+    role: user.role,
 
-      return next(
-        new Error(
-          "Invalid login details",
-          {
-            cause: 401,
-          }
-        )
-      );
+    tokenVersion: user.tokenVersion,
 
-    }
+    rememberMe: rememberMe === true,
+  });
 
+  return res.status(200).json({
+    success: true,
 
-    const passwordCorrect =
-      compare({
+    data: {
+      accessToken,
 
-        plainText:
-          password,
+      tokenType: "Bearer",
 
-        hash:
-          user.passwordHash,
+      user: {
+        id: user._id,
 
-      });
+        fullName: user.fullName,
 
+        email: user.email,
 
-    if (!passwordCorrect) {
+        phoneNumber: user.phoneNumber,
 
-      return next(
-        new Error(
-          "Invalid login details",
-          {
-            cause: 401,
-          }
-        )
-      );
-
-    }
-
-
-    const accessToken =
-      generateToken({
-
-        id:
-          user._id.toString(),
-
-        role:
-          user.role,
-
-        tokenVersion:
-          user.tokenVersion,
-
-        rememberMe:
-          rememberMe === true,
-
-      });
-
-
-    return res.status(200).json({
-
-      success: true,
-
-      data: {
-
-        accessToken,
-
-        tokenType:
-          "Bearer",
-
-        user: {
-
-          id:
-            user._id,
-
-          fullName:
-            user.fullName,
-
-          email:
-            user.email,
-
-          phoneNumber:
-            user.phoneNumber,
-
-          role:
-            user.role,
-
-        },
-
+        role: user.role,
       },
-
-    });
-
-  };
-
+    },
+  });
+};
 
 // LOGOUT
 
-export const logout =
-  async (
-    req,
-    res,
-    next
-  ) => {
+export const logout = async (req, res, next) => {
+  const user = await UserModel.findByIdAndUpdate(
+    req.user._id,
 
-    const user =
-      await UserModel.findByIdAndUpdate(
+    {
+      $inc: {
+        tokenVersion: 1,
+      },
+    },
 
-        req.user._id,
+    {
+      returnDocument: "after",
+    },
+  );
 
-        {
-          $inc: {
-            tokenVersion: 1,
-          },
-        },
+  if (!user) {
+    return next(
+      new Error("User Not Found", {
+        cause: 404,
+      }),
+    );
+  }
 
-        {
-          returnDocument: 'after',
-        }
+  revokeRealtime(user._id);
+  return res.status(200).json({
+    success: true,
 
-      );
-
-
-    if (!user) {
-
-      return next(
-        new Error(
-          "User Not Found",
-          {
-            cause: 404,
-          }
-        )
-      );
-
-    }
-
-
-    return res.status(200).json({
-
-      success: true,
-
-      message:
-        "Logged out successfully",
-
-    });
-
-  };
-
+    message: "Logged out successfully",
+  });
+};
 
 // ==================================================
 // FORGOT PASSWORD
 // ==================================================
 
-export const forgotPassword =
-  async (
-    req,
-    res,
-    next
-  ) => {
+export const forgotPassword = async (req, res, next) => {
+  const { email } = req.body;
 
-    const {
-      email,
-    } = req.body;
+  const genericMessage =
+    "If the email exists, a password reset link will be sent.";
 
-
-    const genericMessage =
-      "If the email exists, a password reset link will be sent.";
-
-
-    const user =
-      await UserModel.findOne({
-        email,
-      });
-
-
-    if (!user) {
-
-      return res.status(200).json({
-
-        success: true,
-
-        message:
-          genericMessage,
-
-      });
-
-    }
-
-
-    await PasswordResetTokenModel.deleteMany({
-
-      userId:
-        user._id,
-
-      usedAt:
-        null,
-
-    });
-
-
-    const rawToken =
-      crypto
-        .randomBytes(32)
-        .toString("hex");
-
-
-    const tokenHash =
-      crypto
-        .createHash("sha256")
-        .update(rawToken)
-        .digest("hex");
-
-
-    const expiresInMinutes =
-      Number(
-        process.env
-          .RESET_TOKEN_EXPIRES_MINUTES ||
-        30
-      );
-
-
-    const expiresAt =
-      new Date(
-        Date.now() +
-        expiresInMinutes *
-        60 *
-        1000
-      );
-
-
-    await PasswordResetTokenModel.create({
-
-      userId:
-        user._id,
-
-      tokenHash,
-
-      expiresAt,
-
-    });
-
-
-    const resetUrl =
-      `${process.env.FRONTEND_URL.split(',')[0].trim()}` +
-      `/reset-password?token=${rawToken}`;
-
-
-  
-
-  try {
-
-  await sendPasswordResetEmail({
-    email: user.email,
-    fullName: user.fullName,
-    resetUrl,
+  const user = await UserModel.findOne({
+    email,
   });
 
-} catch (error) {
-
-  
-  
-  
-  
-  
-  
-  
-
-  return next(
-    new Error(
-      "Unable to send reset email",
-      {
-        cause: 503,
-      }
-    )
-  );
-
-}
-
-
+  if (!user) {
     return res.status(200).json({
-
       success: true,
 
-      message:
-        genericMessage,
-
+      message: genericMessage,
     });
+  }
 
-  };
+  await PasswordResetTokenModel.deleteMany({
+    userId: user._id,
 
+    usedAt: null,
+  });
+
+  const rawToken = crypto.randomBytes(32).toString("hex");
+
+  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+  const expiresInMinutes = Number(
+    process.env.RESET_TOKEN_EXPIRES_MINUTES || 30,
+  );
+
+  const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+
+  await PasswordResetTokenModel.create({
+    userId: user._id,
+
+    tokenHash,
+
+    expiresAt,
+  });
+
+  const resetUrl =
+    `${process.env.FRONTEND_URL.split(",")[0].trim()}` +
+    `/reset-password?token=${rawToken}`;
+
+  try {
+    await sendPasswordResetEmail({
+      email: user.email,
+      fullName: user.fullName,
+      resetUrl,
+    });
+  } catch (error) {
+    return next(
+      new Error("Unable to send reset email", {
+        cause: 503,
+      }),
+    );
+  }
+
+  return res.status(200).json({
+    success: true,
+
+    message: genericMessage,
+  });
+};
 
 // ==================================================
 // RESET PASSWORD
@@ -464,10 +258,7 @@ export const forgotPassword =
 export const resetPassword = async (req, res, next) => {
   const { token, newPassword } = req.body;
 
-  const tokenHash = crypto
-    .createHash("sha256")
-    .update(token)
-    .digest("hex");
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
   const resetToken = await PasswordResetTokenModel.findOneAndUpdate(
     {
@@ -483,29 +274,27 @@ export const resetPassword = async (req, res, next) => {
       },
     },
     {
-      returnDocument: 'after',
-    }
+      returnDocument: "after",
+    },
   );
 
   if (!resetToken) {
     return next(
-      new Error(
-        "Invalid, expired or already used reset token",
-        {
-          cause: 400,
-        }
-      )
+      new Error("Invalid, expired or already used reset token", {
+        cause: 400,
+      }),
     );
   }
 
-  const user = await UserModel.findById(resetToken.userId)
-    .select("+passwordHash");
+  const user = await UserModel.findById(resetToken.userId).select(
+    "+passwordHash",
+  );
 
   if (!user) {
     return next(
       new Error("User Not Found", {
         cause: 404,
-      })
+      }),
     );
   }
 
@@ -516,6 +305,7 @@ export const resetPassword = async (req, res, next) => {
   user.tokenVersion += 1;
 
   await user.save();
+  revokeRealtime(user._id);
 
   return res.status(200).json({
     success: true,

@@ -24,10 +24,13 @@ import {verifyPaymentIndexes} from './Modules/Payment/payment.service.js';
 import {paymentConfig} from './Modules/Payment/payment.config.js';
 import adminRouter from './Modules/Admin/adminController.js';
 import studentRouter from './Modules/Content/student.router.js';
+import notificationRouter from './Modules/User/notification.router.js';
+import {verifyNotificationIndexes} from './Modules/User/notification.service.js';
 import globalErrorHandler from './utils/errorHandling/globalErrorHandler.js';
 export default async function bootstrap(app,express,{connect=true,paymentOptions}={}) {
  const {origins}=validateConfig();
  if(connect) await connectDB();
+ if(process.env.NODE_ENV==='production')await verifyNotificationIndexes();
  if(process.env.NODE_ENV==='production'&&paymentConfig().configured) await verifyPaymentIndexes();
  app.disable('x-powered-by');
  if(process.env.TRUST_PROXY_HOPS) app.set('trust proxy',Number(process.env.TRUST_PROXY_HOPS));
@@ -36,6 +39,7 @@ export default async function bootstrap(app,express,{connect=true,paymentOptions
  app.use(express.json({limit:'128kb'}));
  app.use(express.urlencoded({extended:false,limit:'128kb'}));
  app.get('/health',(req,res)=>res.status(mongoose.connection.readyState===1?200:503).json({ok:mongoose.connection.readyState===1}));
+ app.use('/uploads/avatars',express.static(path.join(uploadRoot,'avatars'),{dotfiles:'deny',index:false,setHeaders:res=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Cache-Control','no-store');}}));
  app.use('/uploads/images',express.static(path.join(uploadRoot,'images'),{dotfiles:'deny',index:false,setHeaders:res=>res.setHeader('X-Content-Type-Options','nosniff')}));
  app.use('/uploads/pdfs',express.static(path.join(uploadRoot,'pdfs'),{dotfiles:'deny',index:false,fallthrough:false,setHeaders:res=>{
   res.setHeader('X-Content-Type-Options','nosniff');
@@ -46,6 +50,7 @@ export default async function bootstrap(app,express,{connect=true,paymentOptions
  const authLimit=rateLimit({windowMs:15*60*1000,limit:100,standardHeaders:'draft-8',legacyHeaders:false});
  api.use('/auth',authLimit,authRouter);
  api.use('/user',userRouter);
+ api.use('/notifications',notificationRouter);
  api.use('/plan',planRouter);
  api.use('/payments',createPaymentRouter(paymentOptions));
  api.use('/library',libraryRouter);
