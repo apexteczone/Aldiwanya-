@@ -76,6 +76,7 @@ export default function AppRoutes() {
               <Route path="courses/new" element={<CreateCoursePage/>}/>
               <Route path="pdfs" element={<PdfManagementPage/>} />
               <Route path="pdfs/new" element={<UploadPdfPage />} />
+              <Route path="pdfs/upload" element={<Navigate to="/admin/pdfs/new" replace />} />
 
               
               <Route path="students" element={<StudentsPage />} />

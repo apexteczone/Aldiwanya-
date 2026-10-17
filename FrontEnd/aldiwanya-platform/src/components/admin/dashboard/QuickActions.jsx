@@ -7,7 +7,7 @@ export const QuickActions = () => {
   const actions = [
     { title: 'إضافة كورس جديد', icon: PlusCircle, path: '/admin/courses/new', color: 'text-blue-600 bg-blue-50' },
     { title: 'إضافة درس جديد', icon: Video, path: '/admin/lessons/new', color: 'text-emerald-600 bg-emerald-50' },
-    { title: 'رفع ملف PDF', icon: FileUp, path: '/admin/pdfs/upload', color: 'text-purple-600 bg-purple-50' },
+    { title: 'رفع ملف PDF', icon: FileUp, path: '/admin/pdfs/new', color: 'text-purple-600 bg-purple-50' },
     { title: 'إدارة الطلاب', icon: Users, path: '/admin/students', color: 'text-amber-600 bg-amber-50' },
   ];
 
