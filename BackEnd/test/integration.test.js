@@ -62,6 +62,40 @@ test('all admin reads reject students and anonymous callers',async()=>{
   assert.equal((await request('GET','/api/v1/admin/'+url,undefined,studentToken)).status,403,url);
  }
 });
+test('admin platform settings persist independently and reject unauthorized, unsafe or stale writes',async()=>{
+ const {default:Settings}=await import('../src/DB/models/PlatformSettings.js');
+ const path='/api/v1/admin/settings';
+ assert.equal((await request('GET',path)).status,401);
+ assert.equal((await request('GET',path,undefined,studentToken)).status,403);
+ const original=(await request('GET',path,undefined,adminToken)).data;
+ assert.equal(original.revision,0);assert.equal(original.general.platformName,'الديوانية');
+ assert.equal(await Settings.countDocuments(),0); // Reading defaults never writes demo content.
+ const general={...original.general,platformName:'منصة الاختبار',shortDescription:'وصف مختصر',description:'وصف كامل\nللاختبار فقط',websiteUrl:'https://example.com',contactEmail:'contact@example.com',phoneCountryCode:'+20',phoneNumber:'01012345678',address:'عنوان تجريبي'};
+ assert.equal((await request('PATCH',path,{revision:0,general},studentToken)).status,403);
+ const saved=await request('PATCH',path,{revision:0,general},adminToken);
+ assert.equal(saved.status,200,JSON.stringify(saved));assert.equal(saved.data.revision,1);
+ assert.equal((await request('GET',path,undefined,adminToken)).data.general.description,general.description);
+ for(const websiteUrl of ['javascript:alert(1)','http://example.com','https://user:password@example.com']){
+  assert.equal((await request('PATCH',path,{revision:1,general:{...general,websiteUrl}},adminToken)).status,422);
+ }
+ assert.equal((await request('PATCH',path,{revision:1,general:{...general,role:'Admin'}},adminToken)).status,422);
+ assert.equal((await request('PATCH',path,{revision:1,general:{...general,contactEmail:'invalid'}},adminToken)).status,422);
+ assert.equal((await request('PATCH',path,{revision:1,general:{...general,phoneNumber:'abc'}},adminToken)).status,422);
+ const socialLinks={...original.socialLinks,facebook:'https://www.facebook.com/test',youtube:'https://youtube.com/@test',x:'https://x.com/test'};
+ assert.equal((await request('PATCH',path,{revision:1,socialLinks:{...socialLinks,facebook:'https://facebook.com.attacker.example'}},adminToken)).status,422);
+ const social=await request('PATCH',path,{revision:1,socialLinks},adminToken);
+ assert.equal(social.status,200,JSON.stringify(social));assert.equal(social.data.general.platformName,general.platformName);
+ assert.equal((await request('PATCH',path,{revision:1,general},adminToken)).status,409);
+ const concurrent=await Promise.all(['الأولى','الثانية'].map(suffix=>request('PATCH',path,{revision:2,general:{...general,platformName:'منصة '+suffix}},adminToken)));
+ assert.deepEqual(concurrent.map(r=>r.status).sort(),[200,409]);
+ const latest=(await request('GET',path,undefined,adminToken)).data;
+ assert.equal(latest.revision,3);assert.equal(latest.socialLinks.youtube,socialLinks.youtube);
+ assert.equal((await request('PATCH',path,{revision:3,socialLinks:original.socialLinks},adminToken)).status,200);
+ assert.equal((await request('GET',path,undefined,adminToken)).data.socialLinks.youtube,'');
+ assert.equal(await Settings.countDocuments(),1);
+ assert.equal((await request('GET','/api/v1/settings')).status,404);
+});
+
 test('grade, course, module and lesson share one canonical schema',async()=>{
  const grade=await request('POST','/api/v1/admin/grades/create',{name:'الصف الأول',status:'active'},adminToken);assert.equal(grade.status,201,JSON.stringify(grade));gradeId=grade.data?._id||grade.grade?._id;
  const course=await request('POST','/api/v1/admin/courses',{title:'Integration course',subject:'Math',grade:gradeId,status:'active'},adminToken);assert.equal(course.status,201,JSON.stringify(course));courseId=course.data._id;assert.equal(course.data.status,'published');
@@ -327,6 +361,91 @@ test('legacy video migration preserves records and refuses ambiguous or unsuppor
  assert.equal((await migrateLessonVideos({apply:true})).videos,0);
 });
 
+test('payment API adapter handles rejection, unknown responses and recovery without live gateway calls',async(t)=>{
+ const {createPaymentService}=await import('../src/Modules/Payment/payment.service.js');
+ const {paymentConfig,paymentConfigurationIssues}=await import('../src/Modules/Payment/payment.config.js');
+ const {default:Payment}=await import('../src/DB/models/Payment.js');
+ const {default:Subscription}=await import('../src/DB/models/Subscription.js');
+ const {default:Plan}=await import('../src/DB/models/Plan.js');
+ const user=await User.create({fullName:'Contract test student',email:'contract@example.com',phoneNumber:'+96550000092',passwordHash:hash({plainText:password}),role:'Student',termsAccepted:true});
+ const plan=await Plan.findOne({durationMonths:1});
+ const env={PAYMENTS_ENABLED:'true',MYFATOORAH_API_KEY:'contract-test-key',MYFATOORAH_WEBHOOK_SECRET:'contract-test-secret',PAYMENT_FRONTEND_URL:'https://web.example',PAYMENT_PUBLIC_API_URL:'https://api.example'};
+ const config=paymentConfig(env);
+ let mode='reject',invoice,executions=0,methodData;
+ const client=createMyFatoorahClient({apiKey:env.MYFATOORAH_API_KEY,fetchImpl:async(url,options)=>{
+   assert.equal(options.method,'POST');assert.equal(options.redirect,'error');assert.ok(options.signal);
+   assert.equal(options.headers.Authorization,'Bearer '+env.MYFATOORAH_API_KEY);
+   const body=JSON.parse(options.body);
+   const response=(data,status=200,success=true)=>({ok:status===200,status,json:async()=>({IsSuccess:success,Data:data})});
+   if(url.endsWith('/InitiatePayment')){
+    assert.deepEqual(body,{InvoiceAmount:plan.amountMinor/1000,CurrencyIso:'KWD'});
+    return response(methodData||{PaymentMethods:[{PaymentMethodId:2,PaymentMethodAr:'بطاقة',IsDirectPayment:false}]});
+   }
+   if(url.endsWith('/ExecutePayment')){
+    executions++;
+    assert.equal(body.InvoiceValue,plan.amountMinor/1000);assert.equal(body.PaymentMethodId,2);
+    assert.equal(body.CustomerReference,body.CustomerIdentifier);assert.equal(body.UserDefinedField,body.CustomerReference);
+    assert.equal(body.CustomerEmail,user.email);assert.equal(body.CustomerName,user.fullName);
+    assert.equal(body.DisplayCurrencyIso,'KWD');assert.equal(body.Language,'ar');
+    assert.equal(body.CallBackUrl,'https://web.example/payment/return?orderId='+body.CustomerReference);
+    assert.equal(body.ErrorUrl,body.CallBackUrl);assert.equal(body.WebhookUrl,'https://api.example/api/v1/payments/webhook');
+    if(mode==='reject')return response(null,400,false);
+    invoice={InvoiceId:800000+executions,InvoiceStatus:'Pending',InvoiceValue:body.InvoiceValue,InvoiceDisplayValue:body.InvoiceValue.toFixed(3)+' KD',CustomerReference:body.CustomerReference,CustomerEmail:body.CustomerEmail,InvoiceTransactions:[]};
+    if(mode==='timeout')throw new Error('simulated network interruption');
+    if(mode==='5xx')return response(null,500,false);
+    if(mode==='malformed')return {ok:true,status:200,json:async()=>{throw new SyntaxError('malformed');}};
+    return response({InvoiceId:invoice.InvoiceId,PaymentURL:'https://demo.myfatoorah.com/pay/'+invoice.InvoiceId});
+   }
+   assert.equal(url,'https://apitest.myfatoorah.com/v2/GetPaymentStatus');
+   assert.ok(['CustomerReference','InvoiceId','PaymentId'].includes(body.KeyType));
+   const expected=body.KeyType==='CustomerReference'?invoice.CustomerReference:body.KeyType==='InvoiceId'?String(invoice.InvoiceId):invoice.InvoiceTransactions[0].PaymentId;
+   assert.equal(body.Key,expected);
+   return response(structuredClone(invoice));
+ }});
+ const service=createPaymentService({client,config});
+ const payload=()=>({planId:String(plan._id),paymentMethodId:2,idempotencyKey:crypto.randomUUID(),returnTo:'/lessons/'+lessonId});
+ async function pay(order){invoice.InvoiceStatus='Paid';invoice.InvoiceTransactions=[{PaymentId:'contract-'+invoice.InvoiceId,TransactionStatus:'Succss'}];return service.reconcile(await Payment.findById(order.id));}
+ await t.test('configuration check does not enable incomplete or incompatible sandbox configuration',async()=>{
+  assert.equal(config.enabled,true);assert.deepEqual(paymentConfigurationIssues(env),[]);
+  assert.equal(paymentConfig({...env,MYFATOORAH_WEBHOOK_SECRET:''}).enabled,false);
+  assert.equal(paymentConfig({...env,MYFATOORAH_BASE_CURRENCY:'EGP'}).enabled,false);
+  assert.equal(paymentConfig({...env,MYFATOORAH_BASE_URL:'https://untrusted.example'}).enabled,false);
+  assert.equal(paymentConfig({...env,PAYMENT_FRONTEND_URL:'http://localhost:5173'}).enabled,false);
+  assert.deepEqual(paymentConfigurationIssues({...env,MYFATOORAH_API_KEY:'',MYFATOORAH_WEBHOOK_SECRET:''}),['MYFATOORAH_API_KEY','MYFATOORAH_WEBHOOK_SECRET']);
+ });
+ await t.test('definitive rejected invoice releases the open order; retries of the same key stay idempotent',async()=>{
+  const input=payload(),failed=await service.checkout(user,input),count=executions;
+  assert.equal(failed.status,'failed');assert.equal(failed.lastAttempt,'failed');assert.equal(await service.openOrderFor(user),null);
+  assert.equal((await service.reconcile(await Payment.findById(failed.id))).status,'failed');
+  assert.equal(String((await service.checkout(user,input)).id),String(failed.id));assert.equal(executions,count);
+  mode='ok';const next=await service.checkout(user,payload());assert.equal(next.status,'pending');
+  assert.notEqual(String(next.id),String(failed.id));assert.equal((await pay(next)).status,'succeeded');
+  assert.equal(await Subscription.countDocuments({paymentOrderId:next.id}),1);
+ });
+ await t.test('timeouts, server errors and unreadable responses never generate a second invoice on retry',async()=>{
+  for(mode of ['timeout','5xx','malformed']){
+   const input=payload(),order=await service.checkout(user,input),count=executions;
+   assert.equal(order.status,'created');assert.equal(order.lastAttempt,'unknown');assert.equal(order.checkoutUrl,null);
+   assert.equal(String((await service.checkout(user,payload())).id),String(order.id));assert.equal(executions,count);
+   assert.equal((await pay(order)).status,'succeeded');assert.equal(await Subscription.countDocuments({paymentOrderId:order.id}),1);
+  }
+ });
+ await t.test('malformed provider status cannot activate access or overwrite a pending order',async()=>{
+  mode='ok';const order=await service.checkout(user,payload()),row=await Payment.findById(order.id);
+  const count=await Subscription.countDocuments({userId:user._id});
+  invoice.InvoiceStatus='Unknown';await assert.rejects(()=>service.reconcile(row),{cause:502});
+  invoice.InvoiceStatus='Paid';invoice.InvoiceTransactions={};await assert.rejects(()=>service.reconcile(row),{cause:502});
+  invoice.InvoiceTransactions=[null];await assert.rejects(()=>service.reconcile(row),{cause:502});
+  assert.equal((await Payment.findById(row._id)).status,'pending');assert.equal(await Subscription.countDocuments({userId:user._id}),count);
+  assert.equal((await pay(order)).status,'succeeded');
+ });
+ await t.test('invalid payment methods fail safely and direct/unknown methods are never offered',async()=>{
+  methodData={PaymentMethods:{}};await assert.rejects(()=>service.methods(plan._id),{cause:502});
+  methodData={PaymentMethods:[null,{PaymentMethodId:-1,IsDirectPayment:false},{PaymentMethodId:3,IsDirectPayment:true},{PaymentMethodId:4},{PaymentMethodId:2,IsDirectPayment:false}]};
+  assert.deepEqual((await service.methods(plan._id)).map(m=>m.id),[2]);
+ });
+});
+
 test('MyFatoorah checkout, signed settlement and recovery use real database records with an isolated provider double',async(t)=>{
  const {createPaymentService,signaturePayload,addCalendarMonths}=await import('../src/Modules/Payment/payment.service.js');
  const {paymentConfig,safeReturnPath,safePaymentUrl}=await import('../src/Modules/Payment/payment.config.js');
@@ -385,6 +504,10 @@ test('MyFatoorah checkout, signed settlement and recovery use real database reco
    results.forEach(r=>assert.equal(r.status,201,JSON.stringify(r)));assert.equal(results[0].data.id,results[1].data.id);assert.equal(executions,1);
    order=await Payment.findById(results[0].data.id);invoice=invoices.get(String(order._id));
    assert.equal(order.amount_minor,plan.amountMinor);assert.equal(invoice.InvoiceValue,plan.amountMinor/1000);
+   assert.equal((await request('GET','/api/v1/payments/orders/open',undefined,token)).data.id,String(order._id));
+   assert.equal((await request('GET','/api/v1/payments/orders/open',undefined,adminToken)).data,null);
+   const mismatch=await request('POST','/api/v1/payments/checkout',{...body,idempotencyKey:crypto.randomUUID(),paymentMethodId:9},token);
+   assert.equal(mismatch.status,409);assert.equal(mismatch.error.code,'OPEN_PAYMENT_EXISTS');assert.equal(executions,1);
    assert.equal((await request('GET','/api/v1/payments/orders/'+order._id,undefined,adminToken)).status,404);
    assert.equal((await request('POST','/api/v1/payments/orders/'+order._id+'/verify',{},token)).data.status,'pending');
    assert.equal((await request('GET','/api/v1/lessons/'+lessonId+'/playback',undefined,token)).status,403);

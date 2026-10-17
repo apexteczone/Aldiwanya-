@@ -83,6 +83,21 @@ No real provider charge or refund has been made during this local implementation
 
 ## Verification and initial-release limitations
 
+### Admin platform settings
+
+`/admin/settings` stores general platform information and social links in the
+singleton `PlatformSettings` document. The administrator-only API is
+`GET /api/v1/admin/settings` and `PATCH /api/v1/admin/settings`.
+PATCH accepts the last `revision` and exactly one complete section (`general` or
+`socialLinks`). A concurrent edit returns 409 rather than overwriting another
+session. GET returns defaults without creating data. Empty optional values clear
+the corresponding fields. URLs are restricted to HTTPS, with social-network host
+validation. This release saves these settings only; visitor pages keep their
+current content and design. Account password controls remain available separately
+in the same page. No screenshot example data is seeded into the normal database.
+
+### Checks
+
 Run `npm run lint`, `npm run build`, and `npm test` at the root. The integration
 suite requires a disposable local MongoDB at 127.0.0.1:27028; it creates and removes
 only uniquely named `aldiwanya_integration_*` databases. It never reads DB_URI from

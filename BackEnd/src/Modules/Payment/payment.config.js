@@ -10,6 +10,12 @@ const currencies = {
   USD: 2,
   EUR: 2,
 };
+export const myFatoorahOrigins = [
+  "https://apitest.myfatoorah.com",
+  "https://api.myfatoorah.com",
+  "https://api-sa.myfatoorah.com",
+  "https://api-ae.myfatoorah.com",
+];
 export const currencyDigits = (currency) => currencies[currency];
 export const minorAmount = (value, currency) => {
   const n = Number(value),
@@ -44,13 +50,7 @@ export function paymentConfig(env = process.env) {
   return {
     enabled:
       env.PAYMENTS_ENABLED === "true" &&
-      Boolean(
-        env.MYFATOORAH_API_KEY &&
-        env.MYFATOORAH_WEBHOOK_SECRET &&
-        frontendOrigin &&
-        apiOrigin &&
-        currencyDigits(currency) !== undefined,
-      ),
+      paymentConfigurationIssues(env).length === 0,
     configured: Boolean(env.MYFATOORAH_API_KEY),
     currency,
     frontendOrigin,
@@ -60,6 +60,31 @@ export function paymentConfig(env = process.env) {
       (env.MYFATOORAH_BASE_URL || "https://apitest.myfatoorah.com") ===
       "https://apitest.myfatoorah.com",
   };
+}
+// Names only: safe for a CLI report without leaking credentials or configured URLs.
+export function paymentConfigurationIssues(env = process.env) {
+  const issues = [];
+  if (!env.MYFATOORAH_API_KEY?.trim()) issues.push("MYFATOORAH_API_KEY");
+  if (!env.MYFATOORAH_WEBHOOK_SECRET?.trim())
+    issues.push("MYFATOORAH_WEBHOOK_SECRET");
+  const baseUrl = env.MYFATOORAH_BASE_URL || myFatoorahOrigins[0];
+  if (!myFatoorahOrigins.includes(baseUrl)) issues.push("MYFATOORAH_BASE_URL");
+  const currency = (env.MYFATOORAH_BASE_CURRENCY || "KWD").toUpperCase();
+  if (
+    currencyDigits(currency) === undefined ||
+    (baseUrl === myFatoorahOrigins[0] && currency !== "KWD")
+  )
+    issues.push("MYFATOORAH_BASE_CURRENCY");
+  const frontend = publicHttps(env.PAYMENT_FRONTEND_URL),
+    api = publicHttps(env.PAYMENT_PUBLIC_API_URL);
+  if (
+    !frontend ||
+    (frontend + "/payment/return?orderId=" + "0".repeat(24)).length > 254
+  )
+    issues.push("PAYMENT_FRONTEND_URL");
+  if (!api || (api + "/api/v1/payments/webhook").length > 254)
+    issues.push("PAYMENT_PUBLIC_API_URL");
+  return issues;
 }
 export function safeReturnPath(value) {
   // Only lesson/course routes can be a post-payment destination.

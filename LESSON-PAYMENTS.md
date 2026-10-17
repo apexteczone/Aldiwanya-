@@ -111,6 +111,46 @@ Refunds, chargebacks and subscription cancellation are not automated in this
 version. They need an agreed operator/provider workflow before public paid launch.
 No real charge/refund has been attempted, and sandbox credentials are still absent.
 
+### Preparing the sandbox account
+
+All purchase API calls are implemented in the server-only MyFatoorah adapter.
+No provider key belongs in the frontend. Once the sandbox account is available:
+
+1. Set `MYFATOORAH_API_KEY` and `MYFATOORAH_WEBHOOK_SECRET` only in `BackEnd/.env`.
+2. Keep `MYFATOORAH_BASE_URL=https://apitest.myfatoorah.com` and
+   `MYFATOORAH_BASE_CURRENCY=KWD`. Sandbox plans must use KWD minor units.
+3. Set `PAYMENT_FRONTEND_URL` and `PAYMENT_PUBLIC_API_URL` to public HTTPS origins
+   (no path). A temporary HTTPS tunnel is needed to test provider returns locally.
+4. Enable V2 payment-status webhooks in the merchant portal with the same webhook
+   secret. The endpoint is `<PAYMENT_PUBLIC_API_URL>/api/v1/payments/webhook`.
+5. Run `npm run payments:check --prefix BackEnd`. This offline check prints missing
+   configuration names only; it never contacts the gateway or modifies the database.
+   Missing configuration returns exit code 1, as expected before account setup.
+6. Verify payment indexes using the existing reviewed `db:indexes` procedure, set
+   `PAYMENTS_ENABLED=true`, restart the backend, then test an actual sandbox payment.
+   Verify success, failure, repeated callbacks, and return to the requested lesson.
+
+Purchase endpoints (all except capabilities/webhook require authentication):
+
+| Method | Path under `/api/v1/payments` | Purpose |
+| --- | --- | --- |
+| GET | `/capabilities` | Whether checkout is configured and enabled |
+| GET | `/methods?planId=...` | Available hosted methods for the server-side plan price |
+| POST | `/checkout` | `planId`, `paymentMethodId`, `idempotencyKey`, optional `returnTo` |
+| GET | `/orders/open` | Recover the current user's unfinished order, or `null` |
+| GET | `/orders/:id` | Read the current user's order |
+| POST | `/orders/:id/verify` | Re-query provider status; optional `paymentId` |
+| POST | `/webhook` | Verify signed V2 notification and authoritative invoice status |
+
+A request for a different plan/method while an invoice is open returns
+`409 OPEN_PAYMENT_EXISTS`; it never silently charges for a different selection.
+Use `/orders/open` to recover and verify that invoice. Matching retries reuse it.
+Definitive provider rejections with no invoice mark the order failed and allow a
+fresh key. Timeouts, server errors and unreadable responses stay unresolved until
+verified; they never automatically create a second invoice. Invalid provider
+status payloads cannot grant access. These cases are covered using the real HTTP
+adapter with an injected response fixture and disposable MongoDB, without live calls.
+
 ## Verification and local use
 
 Start the existing local MongoDB and run backend and frontend in separate terminals:
@@ -141,7 +181,7 @@ Commands: `npm run lint`, `npm run build`, `npm test` at the repository root;
 Chromium once if necessary. `PLAYWRIGHT_CHANNEL=chrome` optionally uses installed
 Chrome. Node 24 and MongoDB 9 were used locally.
 
-Local results: lint and the production frontend build passed; 28 backend tests passed. Five browser flows passed: public browsing,
+Local results before the settings/payment follow-up: lint and the production frontend build passed; 28 backend tests passed. Five browser flows passed: public browsing,
 publication, registration/playback/favorites/progress, unified admin editing, and
 paid lesson → registration → simulated checkout → verified return to the lesson.
 The separate browser PDF save-to-disk check failed with `download.path: canceled`.
@@ -153,6 +193,14 @@ The payment browser test uses a provider double; it does not verify live merchan
 credentials, actual settlement or live webhook delivery. Those checks require the
 sandbox account and public HTTPS test URL before launch. A separate local browser
 smoke test successfully played a real YouTube embed after the referrer-policy fix.
+
+Local settings/payment follow-up (2026-10-17): 35 backend tests passed, frontend
+lint and production build passed, and the five core browser flows above passed
+again. A separate settings browser test passed save/reload, validation, stale-edit
+protection, separate section drafts, mobile layout and unchanged visitor content.
+The known environment-specific PDF save-to-disk test was not rerun in this focused
+follow-up; its limitation and retained test are described above. The local API and
+frontend respond successfully; checkout remains disabled pending merchant setup.
 
 References: [MyFatoorah ExecutePayment](https://docs.myfatoorah.com/docs/execute-payment),
 [webhook signatures](https://docs.myfatoorah.com/docs/webhook-signature),

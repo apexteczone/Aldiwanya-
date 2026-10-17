@@ -236,22 +236,39 @@ export function createPaymentService({
       amount: plan.amountMinor / 10 ** currencyDigits(plan.currency),
       currency: plan.currency,
     });
-    return (result.PaymentMethods || [])
-      .filter(
-        (m) =>
-          Number.isInteger(m.PaymentMethodId) && m.IsDirectPayment !== true,
-      )
-      .map((m) => ({
-        id: m.PaymentMethodId,
-        name: m.PaymentMethodAr || m.PaymentMethodEn,
-        image: safePaymentUrl(m.ImageUrl),
-      }));
+    if (!Array.isArray(result?.PaymentMethods))
+      throw new Error("Invalid payment methods response", { cause: 502 });
+    return result.PaymentMethods.filter(
+      (m) =>
+        m &&
+        Number.isInteger(m.PaymentMethodId) &&
+        m.PaymentMethodId > 0 &&
+        m.IsDirectPayment === false,
+    ).map((m) => ({
+      id: m.PaymentMethodId,
+      name: m.PaymentMethodAr || m.PaymentMethodEn,
+      image: safePaymentUrl(m.ImageUrl),
+    }));
   }
   async function checkout(
     user,
     { planId, paymentMethodId, idempotencyKey, returnTo },
   ) {
     requireCheckout();
+    function reuse(order) {
+      if (
+        String(order.plan_id) !== String(planId) ||
+        order.payment_method_id !== paymentMethodId
+      )
+        throw Object.assign(
+          new Error(
+            "لديك طلب دفع سابق بخطة أو وسيلة دفع مختلفة. تحقق من حالته قبل إنشاء طلب جديد.",
+            { cause: 409 },
+          ),
+          { publicCode: "OPEN_PAYMENT_EXISTS" },
+        );
+      return publicOrder(order);
+    }
     const key = String(user._id) + ":" + idempotencyKey;
     const existing = await Payment.findOne({ idempotency_key: key });
     if (existing) {
@@ -263,7 +280,7 @@ export function createPaymentService({
       return publicOrder(existing);
     }
     const open = await Payment.findOne({ open_user_id: user._id });
-    if (open) return publicOrder(open);
+    if (open) return reuse(open);
     const plan = await availablePlan(planId);
     if (!(await methods(planId)).some((m) => m.id === paymentMethodId))
       throw new Error("اختر وسيلة دفع متاحة.", { cause: 422 });
@@ -290,7 +307,7 @@ export function createPaymentService({
         $or: [{ idempotency_key: key }, { open_user_id: user._id }],
       });
       if (!concurrent) throw error;
-      return publicOrder(concurrent);
+      return reuse(concurrent);
     }
     // Persist before calling the provider. An ambiguous timeout must never cause a second invoice.
     const callbackUrl =
@@ -319,12 +336,22 @@ export function createPaymentService({
           },
         },
       );
-    } catch {
-      // A provider invoice might already exist. Reconciliation uses CustomerReference.
-      await Payment.updateOne(
-        { _id: order._id },
-        { $set: { last_attempt: "unknown" } },
-      );
+    } catch (error) {
+      if (error.code === "PAYMENT_REQUEST_REJECTED") {
+        await Payment.updateOne(
+          { _id: order._id, status: "created" },
+          {
+            $set: { status: "failed", last_attempt: "failed" },
+            $unset: { open_user_id: 1 },
+          },
+        );
+      } else {
+        // A provider invoice might already exist. Reconciliation uses CustomerReference.
+        await Payment.updateOne(
+          { _id: order._id, status: "created" },
+          { $set: { last_attempt: "unknown" } },
+        );
+      }
     }
     return publicOrder(await Payment.findById(order._id));
   }
@@ -333,6 +360,15 @@ export function createPaymentService({
       await PaymentLock.deleteOne({ _id: order.user_id, paymentId: order._id });
       return publicOrder(order);
     }
+    // A definitively rejected ExecutePayment has no invoice to query. A later
+    // signed provider event can still be reconciled if it includes verified data.
+    if (
+      order.status === "failed" &&
+      !order.provider_reference &&
+      !paymentId &&
+      !invoice
+    )
+      return publicOrder(order);
     if (!config.configured)
       throw new Error("Payment provider is not configured", { cause: 503 });
     const data =
@@ -345,6 +381,13 @@ export function createPaymentService({
             ? "InvoiceId"
             : "CustomerReference",
       ));
+    if (
+      !data ||
+      !["Pending", "Paid", "Canceled"].includes(data.InvoiceStatus) ||
+      !Array.isArray(data.InvoiceTransactions) ||
+      data.InvoiceTransactions.some((t) => !t || typeof t !== "object")
+    )
+      throw new Error("Invalid provider invoice response", { cause: 502 });
     checkInvoice(order, data);
     const transactions = data.InvoiceTransactions || [];
     if (
@@ -396,6 +439,10 @@ export function createPaymentService({
     const order = await Payment.findOne({ _id: id, user_id: user._id });
     if (!order) throw new Error("Order not found", { cause: 404 });
     return order;
+  }
+  async function openOrderFor(user) {
+    const order = await Payment.findOne({ open_user_id: user._id });
+    return order ? publicOrder(order) : null;
   }
   async function webhook(body, signature) {
     if (
@@ -475,5 +522,13 @@ export function createPaymentService({
       throw error;
     }
   }
-  return { config, methods, checkout, orderFor, reconcile, webhook };
+  return {
+    config,
+    methods,
+    checkout,
+    orderFor,
+    openOrderFor,
+    reconcile,
+    webhook,
+  };
 }

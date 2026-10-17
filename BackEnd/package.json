@@ -15,7 +15,8 @@
     "db:indexes": "node src/DB/indexes.js",
     "migrate:videos:check": "node src/DB/migrate-lesson-videos.js",
     "migrate:videos:apply": "node src/DB/migrate-lesson-videos.js --apply",
-    "payments:reconcile": "node src/Modules/Payment/reconcile.js"
+    "payments:reconcile": "node src/Modules/Payment/reconcile.js",
+    "payments:check": "node src/Modules/Payment/check-config.js"
   },
   "keywords": [],
   "author": "",
