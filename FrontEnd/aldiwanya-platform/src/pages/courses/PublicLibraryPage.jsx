@@ -20,7 +20,7 @@ export default function PublicLibraryPage() {
       <Link to="/" className="text-sky-300">الرئيسية</Link>
       <h1 className="text-3xl font-bold">مكتبة المذكرات المجانية</h1>
       <p>كل ملفات PDF مجانية ومتاحة للجميع، بدون تسجيل دخول أو اشتراك.</p>
-      <input aria-label="البحث في المذكرات" placeholder="ابحث باسم المذكرة أو الكورس" value={query} onChange={e => setQuery(e.target.value)} className="w-full rounded-xl p-3 bg-slate-800" />
+      <input aria-label="البحث في المذكرات" placeholder="ابحث باسم المذكرة أو المادة" value={query} onChange={e => setQuery(e.target.value)} className="w-full rounded-xl p-3 bg-slate-800" />
       {loading && <p role="status">جاري تحميل المذكرات…</p>}
       {error && <p role="alert">{error}</p>}
       {!loading && !error && !rows.length && <p>لا توجد مذكرات مطابقة حاليًا.</p>}

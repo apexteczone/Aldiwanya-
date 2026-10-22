@@ -15,7 +15,7 @@ export const createPdfSchema = Joi.object({
   description: Joi.string().trim().max(2000).allow("").optional(),
 
   course: objectIdPattern.required().messages({
-    "any.required": "يجب ربط الملف بكورس (Course)",
+    "any.required": "يجب ربط الملف بمادة",
   }),
 
   lesson: objectIdPattern.optional().allow(null, ""),

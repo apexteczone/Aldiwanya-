@@ -1,4 +1,5 @@
 import {useParams} from 'react-router-dom';
+import {PageTitle} from '../../components/common/PageTitle';
 import useResource from '../../hooks/useResource';
 import {ResourceState} from '../../components/common/PlatformUI';
 import {CourseView} from '../courses/CourseDetailsPage';
@@ -8,5 +9,5 @@ function LessonCourse({lesson}){
 }
 export default function LessonPage(){
  const {id}=useParams(),resource=useResource('/lessons/'+id);
- return <ResourceState resource={resource}>{resource.data&&<LessonCourse lesson={resource.data.lesson}/>}</ResourceState>;
+ return <><PageTitle title={resource.data?.lesson?.title || 'عرض الدرس'}/><ResourceState resource={resource}>{resource.data&&<LessonCourse lesson={resource.data.lesson}/>}</ResourceState></>;
 }

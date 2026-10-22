@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { BookOpen, Grid2X2, List, RotateCcw, Search } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Grid2X2, List, RotateCcw, Search } from "lucide-react";
 import useResource from "../../hooks/useResource";
 import {
   CourseCard,
@@ -49,25 +49,15 @@ export default function CoursesPage() {
     <>
       <Hero
         title={selectedGrade ? selectedGrade.name : "المحتوى التعليمي"}
-        subtitle={selectedGrade ? "استعرض كورسات الصف واختر كورسًا للاطلاع على دروسه" : "اكتشف عالمًا من المعرفة مع دوراتنا التعليمية المسجلة"}
+        subtitle={selectedGrade ? "استعرض مواد الصف واختر مادةً للاطلاع على دروسها" : "اكتشف عالمًا من المعرفة مع موادنا التعليمية المسجلة"}
         compact
-      >
-        <nav aria-label="مسار التصفح" className="catalog-breadcrumb"><Link to="/#grades">الصفوف الدراسية</Link><span> / </span><span>{selectedGrade?.name || "جميع الدورات"}</span></nav>
-        <div className="hero-features">
-          <span>
-            <BookOpen />
-            دروس منظمة
-          </span>
-          <span>محتوى تعليمي متكامل</span>
-          <span>تعلم حسب وقتك</span>
-        </div>
-      </Hero>
+      />
       <section className="site-container catalog-layout section">
         <div className="catalog-main">
           <div className="catalog-toolbar">
             <div>
-              <h2>{selectedGrade ? `كورسات ${selectedGrade.name}` : "جميع الدورات"}</h2>
-              <p>{filtered.length} دورة متاحة</p>
+              <h2>{selectedGrade ? `مواد ${selectedGrade.name}` : "جميع المواد"}</h2>
+              <p>{filtered.length} مادة متاحة</p>
             </div>
             <div className="toolbar-options">
               <button
@@ -85,7 +75,7 @@ export default function CoursesPage() {
                 <List />
               </button>
               <select
-                aria-label="ترتيب الدورات"
+                aria-label="ترتيب المواد"
                 value={sort}
                 onChange={(e) => update("sort", e.target.value)}
               >
@@ -104,10 +94,10 @@ export default function CoursesPage() {
             ) : (
               <Empty>
                 {grade && !query && !subject
-                  ? "لا توجد كورسات منشورة لهذا الصف بعد."
+                  ? "لا توجد مواد منشورة لهذا الصف بعد."
                   : courses.length
-                  ? "لا توجد دورات تطابق البحث."
-                  : "لا توجد دورات منشورة بعد."}
+                  ? "لا توجد مواد تطابق البحث."
+                  : "لا توجد مواد منشورة بعد."}
               </Empty>
             )}
           </ResourceState>
@@ -125,8 +115,8 @@ export default function CoursesPage() {
           <div className="input-wrap">
             <Search size={17} />
             <input
-              aria-label="ابحث في الدورات"
-              placeholder="ابحث في الدورات..."
+              aria-label="ابحث في المواد"
+              placeholder="ابحث في المواد..."
               value={query}
               onChange={(e) => update("q", e.target.value)}
             />

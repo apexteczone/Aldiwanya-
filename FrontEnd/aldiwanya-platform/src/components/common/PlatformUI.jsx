@@ -27,6 +27,7 @@ import {
   X,
 } from "lucide-react";
 import usePlatform from "../../hooks/usePlatform";
+import useEntranceMotion from "../../hooks/useEntranceMotion";
 import AccountAvatar from './AccountAvatar';
 import NotificationBell from './NotificationBell';
 import { assetUrl, price } from "../../utils/platform";
@@ -128,7 +129,7 @@ export function CourseCard({ course, progress }) {
           </>
         )}
         <Link className="site-button light full" to={"/courses/" + course._id}>
-          {progress ? "متابعة التعلم" : "عرض الكورس"}
+          {progress ? "متابعة التعلم" : "عرض المادة"}
           <ArrowLeft size={15} />
         </Link>
       </div>
@@ -221,8 +222,9 @@ export function PlanCard({ plan, selected, onSelect }) {
     </article>
   );
 }
-export function Benefits() {
+export function Benefits({ dark = false }) {
   return (
+    <section className={dark ? "benefits-section dark" : "benefits-section"} aria-label="مميزات الديوانية">
     <div className="benefits site-container">
       {[
         [BookOpen, "تعلم بمرونة", "في أي وقت ومن أي مكان"],
@@ -231,12 +233,13 @@ export function Benefits() {
         [ShieldCheck, "بياناتك آمنة", "حماية حسابك وخصوصيتك"],
       ].map(([Icon, title, text]) => (
         <div key={title}>
-          <Icon />
+          <span className="benefit-icon"><Icon /></span>
           <h3>{title}</h3>
           <p>{text}</p>
         </div>
       ))}
     </div>
+    </section>
   );
 }
 export function SupportBanner() {
@@ -310,6 +313,7 @@ export function PlatformLayout() {
   const { profile, logout } = usePlatform();
   const navigate = useNavigate();
   const location = useLocation();
+  const contentRef = useEntranceMotion(location.pathname);
   const [menu, setMenu] = useState(false),
     [search, setSearch] = useState("");
   useEffect(() => {
@@ -328,19 +332,20 @@ export function PlatformLayout() {
         <div className="site-container header-inner">
           <Link to="/" className="brand">
             <img
-              src="/diwaniya-logo-white.png"
+              src="/diwaniya-logo-colored.png"
               alt="الديوانية — منصة تعليمية"
             />
           </Link>
           <button
             className="mobile-menu"
             aria-label="فتح القائمة"
+            aria-controls="site-navigation"
             aria-expanded={menu}
             onClick={() => setMenu(!menu)}
           >
             {menu ? <X /> : <Menu />}
           </button>
-          <nav className={menu ? "open" : ""} aria-label="التنقل الرئيسي">
+          <nav id="site-navigation" className={menu ? "open" : ""} aria-label="التنقل الرئيسي">
             {[
               ["/", "الرئيسية"],
               ["/courses", "المحتوى التعليمي"],
@@ -363,8 +368,8 @@ export function PlatformLayout() {
             }}
           >
             <input
-              aria-label="بحث في الكورسات"
-              placeholder="ابحث عن كورس أو موضوع..."
+              aria-label="بحث في المواد"
+              placeholder="ابحث عن مادة أو موضوع..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -408,7 +413,7 @@ export function PlatformLayout() {
           </div>
         </div>
       </header>
-      <main>
+      <main ref={contentRef}>
         <Outlet />
       </main>
       <footer className="site-footer">

@@ -1,4 +1,5 @@
 import LessonPage from '../pages/lessons/LessonPage';
+import RouteTitle from '../components/common/PageTitle';
 import PaymentReturnPage from '../pages/payment/PaymentReturnPage';
 import {lazy,Suspense} from 'react';
 // import React from 'react';
@@ -31,7 +32,7 @@ const CoursesManagementPage=lazy(()=>import('../pages/admin/CoursesManagementPag
 const CreateCoursePage=lazy(()=>import('../pages/admin/CreateCoursePage'));
 
 // الصفحات الفرعية والجانبية
-// const CoursesManagementPage = () => <div className="p-4 bg-white rounded-2xl border border-border">إدارة الكورسات</div>;
+// const CoursesManagementPage = () => <div className="p-4 bg-white rounded-2xl border border-border">إدارة المواد</div>;
 // const PdfManagementPage = () => <div className="p-4 bg-white rounded-2xl border border-border">إدارة ملفات PDF</div>;
 // const ReportsPage = () => <div className="p-4 bg-white rounded-2xl border border-border">التقارير والإحصائيات</div>;
 const SettingsPage=lazy(()=>import('../pages/admin/SettingsPage'));
@@ -48,7 +49,7 @@ export default function AppRoutes() {
   };
 
   return (
-    <Suspense fallback={<p role="status">جاري التحميل…</p>}><Routes>
+    <><RouteTitle /><Suspense fallback={<p role="status">جاري التحميل…</p>}><Routes>
       {/* صفحة تسجيل الدخول */}
       <Route path="/auth/login" element={<Navigate to="/login" replace />} />
 
@@ -116,6 +117,6 @@ export default function AppRoutes() {
       {['about','contact','privacy','terms'].map(type=><Route key={type} path={'/'+type} element={<InfoPage type={type}/>}/>)}
       <Route path="*" element={<NotFoundPage />} />
       </Route>
-    </Routes></Suspense>
+    </Routes></Suspense></>
   );
 }

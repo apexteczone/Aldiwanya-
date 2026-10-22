@@ -111,22 +111,7 @@ export default function PlansPage() {
         title="اختر خطتك المناسبة"
         subtitle="ابدأ رحلتك التعليمية وكن جزءًا من مجتمع الديوانية"
         compact
-      >
-        <div className="hero-features">
-          <span>
-            <BookOpen />
-            محتوى تعليمي
-          </span>
-          <span>
-            <PlayCircle />
-            دروس مسجلة
-          </span>
-          <span>
-            <FileText />
-            مكتبة مجانية
-          </span>
-        </div>
-      </Hero>
+      />
       <section className="site-container plans-layout section">
         <aside>
           <div className="site-panel order-summary">

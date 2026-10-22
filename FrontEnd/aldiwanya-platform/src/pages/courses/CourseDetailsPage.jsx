@@ -1,4 +1,5 @@
 import VideoPlayer from '../../components/common/VideoPlayer';
+import { PageTitle } from '../../components/common/PageTitle';
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom";
 import {
@@ -22,6 +23,7 @@ export default function CourseDetailsPage({ preview = false }) {
   const { id } = useParams(),
     resource = useResource("/courses/" + id);
   return (
+    <><PageTitle title={resource.data?.title ? `${preview ? 'معاينة: ' : ''}${resource.data.title}` : 'تفاصيل المادة'} />
     <ResourceState resource={resource}>
       {resource.data && (
         <CourseView
@@ -30,7 +32,7 @@ export default function CourseDetailsPage({ preview = false }) {
           preview={preview}
         />
       )}
-    </ResourceState>
+    </ResourceState></>
   );
 }
 export function CourseView({ course, preview=false, initialLessonId }) {
@@ -98,21 +100,7 @@ export function CourseView({ course, preview=false, initialLessonId }) {
           preview ? "شاهد المحتوى المنشور كمعاينة مجانية" : course.description
         }
         compact
-      >
-        <nav aria-label="مسار التصفح" className="catalog-breadcrumb">
-          <Link to="/#grades">الصفوف الدراسية</Link><span> / </span>
-          {course.grade && <><Link to={`/courses?grade=${course.grade._id}`}>{course.grade.name}</Link><span> / </span></>}
-          <span>{course.title}</span>
-        </nav>
-        <div className="hero-features">
-          <span>
-            <BookOpen />
-            {lessons.length} درس
-          </span>
-          {course.durationHours > 0 && <span>{course.durationHours} ساعة</span>}
-          <span>{course.grade?.name}</span>
-        </div>
-      </Hero>
+      />
       <section
         className={`site-container course-layout section ${preview ? "preview-layout" : ""}`}
       >
@@ -157,7 +145,7 @@ export function CourseView({ course, preview=false, initialLessonId }) {
           </div>
           {preview && (
             <div className="site-panel">
-              <h3>محتويات الكورس</h3>
+              <h3>محتويات المادة</h3>
               {lessonList(lessons)}
             </div>
           )}
@@ -176,7 +164,7 @@ export function CourseView({ course, preview=false, initialLessonId }) {
               onActivity={setActivity}
             />
           ) : (
-            <Empty>لم تُنشر دروس لهذا الكورس بعد.</Empty>
+            <Empty>لم تُنشر دروس لهذه المادة بعد.</Empty>
           )}
           {profile && lesson && (
             <button
@@ -213,7 +201,7 @@ export function CourseView({ course, preview=false, initialLessonId }) {
               <div
                 className="course-tabs"
                 role="tablist"
-                aria-label="تفاصيل الكورس"
+                aria-label="تفاصيل المادة"
               >
                 {[
                   ["intro", "مقدمة"],
@@ -236,7 +224,7 @@ export function CourseView({ course, preview=false, initialLessonId }) {
                 ) : (
                   <>
                     <h3>
-                      {tab === "intro" ? "مقدمة عن الكورس" : "وصف الكورس"}
+                      {tab === "intro" ? "مقدمة عن المادة" : "وصف المادة"}
                     </h3>
                     <p>
                       {tab === "intro"
@@ -253,7 +241,7 @@ export function CourseView({ course, preview=false, initialLessonId }) {
         </div>
         {!preview && (
           <aside className="site-panel lesson-sidebar">
-            <h2>محتويات الكورس</h2>
+            <h2>محتويات المادة</h2>
             {lessons.length ? (
               <>
                 {lessonList(lessons.filter((l) => !l.moduleId))}
@@ -314,7 +302,7 @@ function LessonPlayer({lesson,courseId,preview,profile,activity,onActivity,autoR
     {profile?<button className="icon-button" disabled={busy} aria-label={activity?.favoriteLessons.some(l=>l._id===lesson._id)?'إزالة من المفضلة':'إضافة إلى المفضلة'} onClick={favorite}><Heart size={21} fill={activity?.favoriteLessons.some(l=>l._id===lesson._id)?'currentColor':'none'}/></button>:<Link to={'/login?next='+encodeURIComponent(next)}>سجّل الدخول لحفظ المفضلة</Link>}
    </div>
    {message&&<p role="alert" className="form-error">{message}</p>}
-  </>:preview?<Empty icon={PlayCircle}>اختر درسًا مجانيًا من محتويات الكورس لعرض المعاينة.</Empty>:<div className="site-empty">
+  </>:preview?<Empty icon={PlayCircle}>اختر درسًا مجانيًا من محتويات المادة لعرض المعاينة.</Empty>:<div className="site-empty">
     <LockKeyhole size={42}/><h3>{resource.status===401?'سجّل الدخول لمشاهدة هذا الدرس':'هذا الدرس متاح للمشتركين'}</h3>
     <p>ستعود لنفس الدرس بعد إتمام الخطوات.</p>
     <Link className="site-button" to={(resource.status===401?'/login':'/plans')+'?next='+encodeURIComponent(next)}>{resource.status===401?'تسجيل الدخول':'عرض خطط الاشتراك'}</Link>

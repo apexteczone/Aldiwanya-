@@ -110,7 +110,7 @@ function StudentSubscriptions() {
         </div>
       )
     },
-    { header: 'الكورس', accessor: 'course', className: 'font-medium text-text-primary' },
+    { header: 'المادة', accessor: 'course', className: 'font-medium text-text-primary' },
     { 
       header: 'نوع الاشتراك', 
       cell: (row) => (

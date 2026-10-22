@@ -9,7 +9,7 @@ export function CourseExtraDetailsForm({ formData, handleChange }) {
         <Layers className="w-5 h-5 text-blue-600" />
         <div>
           <h3 className="font-extrabold text-navy-950 text-sm">تفاصيل إضافية</h3>
-          <p className="text-[10px] text-text-muted">إعدادات إضافية للكورس</p>
+          <p className="text-[10px] text-text-muted">إعدادات إضافية للمادة</p>
         </div>
       </div>
 
@@ -45,9 +45,9 @@ export function CourseExtraDetailsForm({ formData, handleChange }) {
           </div>
         </div>
 
-        {/* مدة الكورس التقريبية */}
+        {/* مدة المادة التقريبية */}
         <div className="space-y-1">
-          <label className="font-bold text-text-secondary block">مدة الكورس التقريبية</label>
+          <label className="font-bold text-text-secondary block">مدة المادة التقريبية</label>
           <div className="relative">
             <input
               type="number"

@@ -108,7 +108,7 @@ export default function GradesManager() {
             <BookOpen className="text-blue-600" /> إدارة الصفوف الدراسية
           </h1>
           <p className="text-gray-500 text-sm mt-1">
-            إضافة وتعديل المراحل والصفوف الدراسية للتحكم في الكورسات
+            إضافة وتعديل المراحل والصفوف الدراسية للتحكم في المواد
           </p>
         </div>
 <Link

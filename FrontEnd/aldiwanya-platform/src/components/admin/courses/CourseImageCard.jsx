@@ -6,8 +6,8 @@ export function CourseImageCard({ imagePreview, onImageChange, onClearImage }) {
       <div className="flex items-center gap-2 border-b border-border pb-3">
         <Image className="w-5 h-5 text-blue-600" />
         <div>
-          <h3 className="font-extrabold text-navy-950 text-sm">صورة الكورس</h3>
-          <p className="text-[10px] text-text-muted">قم برفع صورة جذابة للكورس (نسبة 16:9)</p>
+          <h3 className="font-extrabold text-navy-950 text-sm">صورة المادة</h3>
+          <p className="text-[10px] text-text-muted">قم برفع صورة جذابة للمادة (نسبة 16:9)</p>
         </div>
       </div>
 

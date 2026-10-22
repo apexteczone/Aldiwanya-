@@ -149,7 +149,7 @@ export default function PlansManagementPage() {
         <article>
           <div>
             <h2>الاشتراك الترم</h2>
-            <p>يتيح للطالب الوصول إلى الكورسات لمدة الترم المحددة في الخطة.</p>
+            <p>يتيح للطالب الوصول إلى المواد لمدة الترم المحددة في الخطة.</p>
           </div>
           <div className="ref-plan-illustration">
             <GraduationCap />
@@ -160,7 +160,7 @@ export default function PlansManagementPage() {
           <div>
             <h2>الاشتراك الشهري</h2>
             <p>
-              يتيح للطالب الوصول إلى الكورسات لمدة شهر واحد من تاريخ الاشتراك.
+              يتيح للطالب الوصول إلى المواد لمدة شهر واحد من تاريخ الاشتراك.
             </p>
           </div>
           <div className="ref-plan-illustration">

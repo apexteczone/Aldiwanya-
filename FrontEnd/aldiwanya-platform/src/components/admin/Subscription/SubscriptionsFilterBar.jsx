@@ -8,7 +8,7 @@ export const SubscriptionsFilterBar = ({ filters, setFilters, onSearch }) => {
       <div className="relative flex-1 min-w-[220px]">
         <input
           type="text"
-          placeholder="إبحث عن طالب أو كورس ..."
+          placeholder="إبحث عن طالب أو مادة ..."
           value={filters.search}
           onChange={(e) => {
             setFilters({ ...filters, search: e.target.value });
@@ -45,13 +45,13 @@ export const SubscriptionsFilterBar = ({ filters, setFilters, onSearch }) => {
           <option value="yearly">سنوي</option>
         </select>
 
-        {/* كل الكورسات */}
+        {/* كل المواد */}
         <select
           value={filters.course}
           onChange={(e) => setFilters({ ...filters, course: e.target.value })}
           className="bg-surface border border-border text-text-primary rounded-xl px-3 py-2.5 focus:outline-none cursor-pointer"
         >
-          <option value="">كل الكورسات</option>
+          <option value="">كل المواد</option>
           <option value="algebra">مقدمة في الجبر</option>
           <option value="equations">المعادلات البسيطة</option>
           <option value="roots">قوانين الأسس والجذور</option>

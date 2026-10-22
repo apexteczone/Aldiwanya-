@@ -132,7 +132,7 @@ test("admin and student avatars replace files and notifications arrive live with
     const courseResponse = await request.post("/api/v1/admin/courses", {
       headers,
       data: {
-        title: "كورس إشعارات الاختبار",
+        title: "مادة إشعارات الاختبار",
         grade: grade._id,
         subject: "اختبار",
         status: "published",
@@ -143,7 +143,7 @@ test("admin and student avatars replace files and notifications arrive live with
     gradeId = grade._id;
     courseId = course._id;
     await expect(
-      student.getByRole("button", { name: /كورس جديد.*كورس إشعارات الاختبار/ }),
+      student.getByRole("button", { name: /مادة جديدة.*مادة إشعارات الاختبار/ }),
     ).toBeVisible();
     const lessonResponse = await request.post("/api/v1/admin/lessons", {
       headers,
@@ -177,7 +177,7 @@ test("admin and student avatars replace files and notifications arrive live with
     ).toBeVisible();
     await expect(student.locator(".notification-item.unread")).toHaveCount(0);
     await student
-      .getByRole("button", { name: /كورس جديد.*كورس إشعارات الاختبار/ })
+      .getByRole("button", { name: /مادة جديدة.*مادة إشعارات الاختبار/ })
       .click();
     await expect(student).toHaveURL(new RegExp("/courses/" + course._id + "$"));
     await student.goto("/account");

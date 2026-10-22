@@ -8,7 +8,7 @@ export const PaymentsFilterBar = ({ filters, setFilters, onSearch }) => {
       <div className="relative flex-1 min-w-[240px]">
         <input
           type="text"
-          placeholder="إبحث عن طالب، رقم عملية، أو كورس ..."
+          placeholder="إبحث عن طالب، رقم عملية، أو مادة ..."
           value={filters.search}
           onChange={(e) => {
             setFilters({ ...filters, search: e.target.value });
@@ -47,13 +47,13 @@ export const PaymentsFilterBar = ({ filters, setFilters, onSearch }) => {
           <option value="apple">أبل باي</option>
         </select>
 
-        {/* الكورسات */}
+        {/* المواد */}
         <select
           value={filters.course}
           onChange={(e) => setFilters({ ...filters, course: e.target.value })}
           className="bg-surface border border-border text-text-primary rounded-xl px-3 py-2.5 focus:outline-none cursor-pointer"
         >
-          <option value="">كل الكورسات</option>
+          <option value="">كل المواد</option>
           <option value="algebra">مقدمة في الجبر</option>
           <option value="equations">المعادلات البسيطة</option>
         </select>

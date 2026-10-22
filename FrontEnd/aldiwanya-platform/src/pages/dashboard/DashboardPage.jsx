@@ -55,9 +55,7 @@ export default function DashboardPage() {
         title={"مرحبًا، " + user.fullName + " 👋"}
         subtitle="يسعدنا أن نراك مجددًا في منصتك التعليمية"
         compact
-      >
-        <p className="hero-detail">استمر في رحلتك التعليمية وحقق أهدافك</p>
-      </Hero>
+      />
       <section className="site-container dashboard-layout section">
         <aside className="student-sidebar">
           <div className="profile-card">
@@ -107,7 +105,7 @@ export default function DashboardPage() {
             <ResourceState resource={activity}>
               <div className="profile-detail">
                 <BookOpen />
-                <span>دورات بدأت تعلمها</span>
+                <span>مواد بدأت تعلمها</span>
                 <b>{started.length}</b>
               </div>
               <div className="profile-detail">
@@ -200,7 +198,7 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <Empty>
-                    لم تبدأ أي دورة بعد. استكشف المحتوى وابدأ التعلم.
+                    لم تبدأ أي مادة بعد. استكشف المحتوى وابدأ التعلم.
                   </Empty>
                 )}
               </ResourceState>

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Download, FileText, Grid2X2, Search, ShieldCheck } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { FileText, Grid2X2, Search, ShieldCheck } from "lucide-react";
 import useResource from "../../hooks/useResource";
 import {
   Empty,
@@ -8,18 +9,38 @@ import {
   PdfCard,
   ResourceState,
 } from "../../components/common/PlatformUI";
+const categoryName = (value = "") =>
+  ["exam", "exams", "امتحان", "امتحانات", "اختبارات"].includes(
+    String(value ?? "")
+      .trim()
+      .toLowerCase(),
+  )
+    ? "امتحانات"
+    : value;
 export default function LibraryPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const category = categoryName(searchParams.get("category") || "");
+  const setCategory = (value) =>
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (value) next.set("category", value);
+      else next.delete("category");
+      return next;
+    });
   const resource = useResource("/library/pdfs"),
     [query, setQuery] = useState(""),
-    [category, setCategory] = useState(""),
     [sort, setSort] = useState("newest"),
     [page, setPage] = useState(1);
   const pdfs = resource.data || [],
-    categories = [...new Set(pdfs.map((p) => p.type).filter(Boolean))];
+    categories = [
+      ...new Set(
+        [...pdfs.map((p) => categoryName(p.type)), category].filter(Boolean),
+      ),
+    ];
   const filtered = pdfs
     .filter(
       (p) =>
-        (!category || p.type === category) &&
+        (!category || categoryName(p.type) === category) &&
         `${p.title} ${p.description} ${p.course?.title || ""}`
           .toLowerCase()
           .includes(query.toLowerCase()),
@@ -37,25 +58,7 @@ export default function LibraryPage() {
         title="المكتبة المجانية"
         subtitle="ملفات PDF تعليمية مجانية للزوار والطلاب على حد سواء"
         compact
-      >
-        <p className="hero-detail">
-          اكتشف المذكرات والملفات التعليمية المتوفرة لتساعدك في رحلتك التعليمية.
-        </p>
-        <div className="hero-features">
-          <span>
-            <ShieldCheck />
-            متاحة للجميع
-          </span>
-          <span>
-            <FileText />
-            مجانية دائمًا
-          </span>
-          <span>
-            <Download />
-            تحميل مباشر
-          </span>
-        </div>
-      </Hero>
+      />
       <section className="site-container section">
         <div className="category-panel">
           <h2>تصفح حسب التصنيف</h2>
@@ -103,7 +106,9 @@ export default function LibraryPage() {
                     }}
                   >
                     {c}
-                    <span>{pdfs.filter((p) => p.type === c).length}</span>
+                    <span>
+                      {pdfs.filter((p) => categoryName(p.type) === c).length}
+                    </span>
                   </button>
                 ))
               ) : (
@@ -151,9 +156,11 @@ export default function LibraryPage() {
                 </div>
               ) : (
                 <Empty icon={FileText}>
-                  {pdfs.length
-                    ? "لا توجد ملفات تطابق البحث."
-                    : "لا توجد مذكرات منشورة بعد."}
+                  {category === "امتحانات" && !query
+                    ? "لا توجد اختبارات منشورة بعد."
+                    : pdfs.length
+                      ? "لا توجد ملفات تطابق البحث."
+                      : "لا توجد مذكرات منشورة بعد."}
                 </Empty>
               )}
             </ResourceState>
@@ -167,7 +174,12 @@ export default function LibraryPage() {
 function BookQuote() {
   return (
     <>
-      <img className="quote-books" src="/learning-books.png" alt="" loading="lazy" />
+      <img
+        className="quote-books"
+        src="/learning-books.png"
+        alt=""
+        loading="lazy"
+      />
       <h2>
         المعرفة .. هي
         <br />

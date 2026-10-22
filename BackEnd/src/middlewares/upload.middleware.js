@@ -3,9 +3,14 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 export const uploadRoot=path.resolve(process.env.UPLOAD_DIR||'uploads');
-const parser=multer({storage:multer.memoryStorage(),limits:{fileSize:20*1024*1024,files:1,fields:15}});
-function uploader(kind) {return {single(field) {return (req,res,next)=>parser.single(field)(req,res,async error=>{
- if(error) return next(error);
+const maxPdfBytes=35*1024*1024;
+function uploader(kind) {
+ const parser=multer({storage:multer.memoryStorage(),limits:{fileSize:kind==='pdf'?maxPdfBytes:20*1024*1024,files:1,fields:15}});
+ return {single(field) {return (req,res,next)=>parser.single(field)(req,res,async error=>{
+ if(error) {
+  if(kind==='pdf' && error.code==='LIMIT_FILE_SIZE') error.message='الحد الأقصى لحجم ملف PDF هو 35 ميجابايت';
+  return next(error);
+ }
  if(!req.file) return next();
  try {
   const b=req.file.buffer;

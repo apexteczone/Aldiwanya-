@@ -15,7 +15,7 @@ export function ReferenceHeader({
         <ChevronLeft size={14} />
         {lessons && (
           <>
-            <Link to="/admin/courses">إدارة الكورسات</Link>
+            <Link to="/admin/courses">إدارة المواد</Link>
             <ChevronLeft size={14} />
           </>
         )}

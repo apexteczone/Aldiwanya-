@@ -53,7 +53,7 @@ export default function PaymentsPage() {
         </div>
       )
     },
-    { header: 'الكورس', accessor: 'course', className: 'font-medium text-text-primary' },
+    { header: 'المادة', accessor: 'course', className: 'font-medium text-text-primary' },
     { header: 'المبلغ', accessor: 'amount', className: 'font-bold text-text-primary' },
     {
       header: 'طريقة الدفع',

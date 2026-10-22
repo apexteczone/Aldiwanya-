@@ -59,9 +59,9 @@ export default function AdminDashboardPage() {
             iconColor="text-purple-600"
           />
           <StatCard 
-            title="إجمالي الكورسات"
+            title="إجمالي المواد"
             value={stats.totalCourses.count}
-            changeText={`↑ +${stats.totalCourses.newCount} كورس جديد`}
+            changeText={`↑ +${stats.totalCourses.newCount} مادة جديدة`}
             icon={BookOpen}
             iconBgColor="bg-emerald-50"
             iconColor="text-emerald-600"

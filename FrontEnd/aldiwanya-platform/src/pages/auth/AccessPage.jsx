@@ -255,7 +255,7 @@ export default function AccessPage({ register = false }) {
           )}
         </div>
       </section>
-      <Benefits />
+      <Benefits dark />
     </>
   );
 }

@@ -1,0 +1,833 @@
+/* Reference homepage only: preserve the shared navbar, logo and administration UI. */
+.reference-home {
+  --home-cyan: #56d8f5;
+  overflow: clip;
+}
+.reference-home .site-button {
+  border-radius: 30px;
+}
+.reference-home .home-math-hero {
+  position: relative;
+  isolation: isolate;
+  min-height: 465px;
+  background: #031b36;
+  color: #fff;
+  display: grid;
+  align-items: center;
+}
+.reference-home .home-hero-image {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 56%;
+}
+.reference-home .home-math-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, #03182f8c, #03182f30 42%, transparent 65%);
+  pointer-events: none;
+}
+.reference-home .home-hero-inner {
+  display: flex;
+  direction: ltr;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-block: 40px;
+}
+.reference-home .home-hero-copy {
+  direction: rtl;
+  width: 48%;
+  max-width: 600px;
+  margin: 0;
+  text-align: center;
+}
+.reference-home .home-hero-copy h1 {
+  font-size: clamp(48px, 4.8vw, 68px);
+  line-height: 1.35;
+  color: #fff;
+  margin-bottom: 12px;
+  text-shadow: 0 4px 22px #001327;
+}
+.reference-home .home-hero-copy h1 span {
+  display: block;
+  color: var(--home-cyan);
+  font-size: clamp(29px, 3.1vw, 44px);
+}
+.reference-home .home-hero-copy .home-hero-tagline {
+  color: #fff;
+  font-size: clamp(17px, 1.6vw, 22px);
+  font-weight: 700;
+  margin: 12px 0;
+}
+.reference-home .home-hero-copy .home-hero-detail {
+  color: #e0ecf7;
+  font-size: 16px;
+  max-width: 460px;
+  margin-inline: auto;
+}
+.reference-home .hero-actions {
+  margin-top: 25px;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.reference-home .hero-actions .site-button {
+  background: linear-gradient(115deg, #10c3f5, #0083dc);
+  padding-inline: 26px;
+  box-shadow: 0 6px 26px #008edb33;
+}
+.reference-home .hero-actions .outline {
+  background: #00162b88;
+  border-color: #b0d6e6;
+  color: #fff !important;
+  box-shadow: none;
+}
+.reference-home .home-math-caption {
+  text-align: center;
+  direction: rtl;
+  color: white;
+  margin-top: -15px;
+  padding: 14px 24px;
+  background: #011a35b8;
+  border-radius: 18px;
+  transform: rotate(-7deg);
+}
+.reference-home .home-math-caption > span {
+  display: block;
+  color: var(--home-cyan);
+  font:
+    italic 32px Georgia,
+    serif;
+}
+.reference-home .home-math-caption strong {
+  display: block;
+  font-size: 23px;
+  line-height: 1.6;
+  font-weight: 600;
+}
+.reference-home .home-math-caption::after {
+  content: "";
+  display: block;
+  height: 3px;
+  width: 60%;
+  margin: 9px auto 0;
+  background: var(--home-cyan);
+  transform: rotate(-8deg);
+}
+.reference-home .home-feature-section {
+  background: #f8fcff;
+  padding: 26px 0 30px;
+  position: relative;
+  z-index: 1;
+}
+.reference-home .feature-strip {
+  padding-block: 0;
+  gap: 18px;
+}
+.reference-home .feature-strip > div {
+  background: linear-gradient(145deg, #f1f9ff, #e7f3fd);
+  padding: 14px 7px;
+  border-radius: 9px;
+  border-color: #e2eef8;
+}
+.reference-home .feature-icon {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 0;
+  margin-bottom: 8px;
+  color: #155b94 !important;
+}
+.reference-home .feature-strip h3 {
+  font-size: 17px;
+}
+.reference-home .feature-strip p {
+  font-size: 14px;
+  color: #335b81;
+}
+.reference-home .home-dark {
+  background:
+    radial-gradient(ellipse at 5% 70%, #064a7b70, transparent 48%),
+    linear-gradient(115deg, #02162f, #06264c 65%, #032042);
+  color: #fff;
+  position: relative;
+  isolation: isolate;
+}
+.reference-home .home-dark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.3;
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 47px,
+    #26baff20 48px,
+    transparent 49px 96px
+  );
+  mask-image: linear-gradient(90deg, #000, transparent 60%);
+}
+.reference-home .home-dark p {
+  color: #c5daed;
+}
+.reference-home .home-trial {
+  padding-block: 36px;
+  border-bottom: 1px solid #7ce8ff88;
+}
+.reference-home .home-trial::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -15% -4%;
+  pointer-events: none;
+  border: 2px solid #32c9ff8a;
+  border-left-width: 25px;
+  border-right-width: 17px;
+  border-radius: 50% 0 50% 0 / 35% 0 35% 0;
+  box-shadow:
+    0 -9px 0 #087bc533,
+    0 12px 0 #006dc96b;
+  transform: rotate(-4deg);
+}
+.reference-home .home-trial-layout {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 28px;
+  align-items: center;
+}
+.reference-home .home-trial-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.reference-home .home-trial-card {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+  min-width: 0;
+  border-radius: 17px;
+  border: 1px solid #b5e2f7;
+  padding: 24px 14px 18px;
+  color: #103e6a;
+  background: radial-gradient(
+    ellipse at center top,
+    #fff,
+    #e2f5ff 72%,
+    #c0e5fa
+  );
+  box-shadow:
+    0 0 0 5px #26c7ff05,
+    0 15px 25px #000e234d;
+  transition:
+    transform 0.25s,
+    box-shadow 0.25s;
+}
+.reference-home .home-trial-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 75px;
+  height: 72px;
+  margin-bottom: 12px;
+  color: #115b95;
+}
+.reference-home .home-trial-icon > svg {
+  width: 64px;
+  height: 64px;
+}
+.reference-home .home-trial-icon::before,
+.reference-home .home-trial-icon::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 24px;
+  top: 20px;
+  border-top: 2px solid #1777ad;
+  border-bottom: 2px solid #1777ad;
+  transform: rotate(20deg);
+}
+.reference-home .home-trial-icon::before {
+  right: -14px;
+}
+.reference-home .home-trial-icon::after {
+  left: -14px;
+  transform: rotate(-20deg);
+}
+.reference-home .home-trial-card h3 {
+  font-size: 20px;
+}
+.reference-home .home-trial-card p {
+  color: #385e7c;
+  font-size: 14px;
+  margin: 4px 0 20px;
+}
+.reference-home .home-card-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  min-height: 40px;
+  padding: 7px 12px;
+  width: 100%;
+  margin-top: auto;
+  border-radius: 30px;
+  background: linear-gradient(130deg, #0aabe6, #00588e);
+  color: #fff;
+  box-shadow: inset 0 1px 0 #72e3ff;
+}
+.reference-home .home-trial-intro {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.reference-home .home-trial-intro > div {
+  flex: 1;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.reference-home .home-trial-intro h2 {
+  color: var(--home-cyan);
+  font-size: clamp(26px, 2.6vw, 36px);
+  white-space: nowrap;
+}
+.reference-home .home-trial-intro p {
+  font-size: 15px;
+  color: #edf7ff;
+  margin-bottom: 18px;
+}
+.reference-home .home-trial-intro .site-button {
+  background: linear-gradient(115deg, #15bded, #0485db);
+}
+.reference-home .home-trial-art {
+  width: 45%;
+  max-height: 290px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 20px #00a9ef30);
+}
+.reference-home .home-grades {
+  padding: 22px 0 30px;
+  border-bottom: 1px solid #7ce8ff88;
+  scroll-margin-top: 100px;
+}
+.reference-home .home-section-title {
+  margin-bottom: 22px;
+}
+.reference-home .home-section-title h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 25px;
+  color: #fff;
+}
+.reference-home .home-section-title h2 svg {
+  color: #62d9fc;
+}
+.reference-home .home-section-title a {
+  color: #b6eaff;
+}
+.reference-home .home-grades-layout {
+  display: grid;
+  grid-template-columns: 1.05fr 0.8fr 1.2fr;
+  align-items: stretch;
+  gap: 22px;
+}
+.reference-home .home-grade-list {
+  align-self: center;
+  padding: 16px;
+  border: 1px solid #658bc0;
+  border-radius: 30px 30px 20px 20px;
+  background: linear-gradient(145deg, #031a3d5e, #08254c99);
+  display: grid;
+  gap: 12px;
+}
+.platform .reference-home .home-grade-row {
+  --grade-color: #17bdf3;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  min-width: 0;
+  border-radius: 40px 15px 15px 40px;
+  border: 1px solid color-mix(in srgb, var(--grade-color) 40%, transparent);
+  background: linear-gradient(
+    270deg,
+    color-mix(in srgb, var(--grade-color) 18%, #041a3c),
+    #031737
+  );
+  box-shadow: inset 0 0 14px
+    color-mix(in srgb, var(--grade-color) 10%, transparent);
+}
+.platform .reference-home .home-grade-row.grade-tone-1 {
+  --grade-color: #1bd2bc;
+}
+.platform .reference-home .home-grade-row.grade-tone-2 {
+  --grade-color: #c874ed;
+}
+.reference-home .home-grade-icon {
+  width: 43px;
+  height: 43px;
+  flex: 0 0 43px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(
+    145deg,
+    var(--grade-color),
+    color-mix(in srgb, var(--grade-color), #003e77 45%)
+  );
+  border-radius: 50%;
+  color: #fff;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--grade-color) 30%, transparent);
+}
+.reference-home .home-grade-row h3 {
+  font-size: 17px;
+  line-height: 1.6;
+  color: #fff;
+}
+.platform .reference-home .home-grade-row p {
+  color: #c5daed;
+  font-size: 13px;
+}
+.reference-home .home-grade-arrow {
+  margin-right: auto;
+  color: #b6eaff;
+}
+.reference-home .home-grades-intro {
+  border: 1px solid #446d9e;
+  border-radius: 30px;
+  padding: 26px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  background: radial-gradient(ellipse at bottom, #064f7940, transparent 75%);
+}
+.reference-home .home-grades-intro h3 {
+  font-size: clamp(25px, 2.6vw, 34px);
+  color: var(--home-cyan);
+}
+.reference-home .home-grades-intro p {
+  font-size: 15px;
+  margin: 12px 0 24px;
+}
+.reference-home .home-purple-button {
+  background: linear-gradient(110deg, #3c2865, #672586);
+  border-color: #ad74db;
+  box-shadow: 0 0 23px #a34ee225;
+}
+.reference-home .home-math-art {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 36px 12px 36px 12px;
+  background: radial-gradient(ellipse at center, #0c497d85, transparent 70%);
+}
+.reference-home .home-math-art img {
+  max-height: 280px;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+.reference-home .home-videos {
+  padding: 22px 0 30px;
+}
+.reference-home .home-videos .video-cover {
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  border-color: #9fc7e0;
+}
+.reference-home .home-videos .video-cover .cover-placeholder {
+  height: 100%;
+}
+.reference-home .home-videos .video-card h3 {
+  color: #f2f8ff;
+  font-size: 17px;
+  margin-top: 9px;
+}
+.reference-home .home-videos .play-circle {
+  background: #00203ebd;
+  border-color: #d3efff;
+}
+.reference-home .home-dark .site-empty {
+  background: #061f3ab3;
+  border-color: #426d94;
+  color: #9fdcf8;
+  min-height: 150px;
+}
+.reference-home .home-dark .site-empty p {
+  color: #d4e5f6;
+}
+.reference-home .home-benefits {
+  padding: 24px 0;
+  background: linear-gradient(#fff, #f1f9ff);
+}
+.reference-home .home-benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+}
+.reference-home .home-benefit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding: 13px 10px;
+  background: #eef7fd;
+  border: 1px solid #e0edf7;
+  border-radius: 12px;
+  transition:
+    transform 0.25s,
+    box-shadow 0.25s;
+}
+.reference-home .home-benefit > span {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #d2e6f2;
+  box-shadow: 0 2px 7px #1c548a12;
+  color: #1a5c91;
+}
+.reference-home .home-benefit h3 {
+  font-size: 15px;
+}
+.reference-home .home-benefit p {
+  font-size: 13px;
+  color: #496a88;
+}
+.reference-home .home-join {
+  padding: 25px 24px 28px;
+  min-height: 170px;
+  border-top: 1px solid #2584bd;
+  border-bottom: 1px solid #2584bd;
+  background:
+    linear-gradient(90deg, #03264cd9, #073863ab 55%, #02183148),
+    url("/kuwait-skyline-wide.jpg") right 58% / cover no-repeat;
+}
+.reference-home .home-join h2 {
+  font-size: 25px;
+  margin-bottom: 5px;
+}
+.reference-home .home-join p {
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+.reference-home .home-join .site-button {
+  padding-block: 6px;
+  min-height: 38px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .reference-home .home-trial-card:hover {
+    transform: translateY(-7px);
+    box-shadow:
+      0 0 0 4px #2dbbff22,
+      0 18px 32px #000c2680;
+  }
+  .reference-home .home-benefit:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 22px #126aa21a;
+  }
+  .reference-home .home-grade-row:hover {
+    border-color: var(--grade-color);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .reference-home .home-trial-art {
+    animation: home-art-float 5s ease-in-out infinite;
+  }
+  .reference-home .home-math-caption {
+    animation: home-caption-enter 0.8s ease-out both;
+  }
+}
+@keyframes home-art-float {
+  50% {
+    translate: 0 -8px;
+  }
+}
+@keyframes home-caption-enter {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@media (min-width: 1101px) {
+  .reference-home .home-hero-copy {
+    margin-left: -16px;
+  }
+}
+@media (min-width: 1600px) {
+  .reference-home .home-math-hero {
+    min-height: 540px;
+  }
+}
+@media (max-width: 1100px) {
+  .reference-home .home-hero-copy {
+    width: 53%;
+  }
+  .reference-home .home-trial-layout {
+    grid-template-columns: 1.45fr 1fr;
+    gap: 20px;
+  }
+  .reference-home .home-trial-cards {
+    gap: 12px;
+  }
+  .reference-home .home-trial-card {
+    padding-inline: 10px;
+  }
+  .reference-home .home-trial-card h3 {
+    font-size: 18px;
+  }
+  .reference-home .home-trial-card p {
+    font-size: 13px;
+  }
+  .reference-home .home-trial-intro {
+    flex-direction: column;
+  }
+  .reference-home .home-trial-art {
+    width: 125px;
+    max-height: 140px;
+    margin-top: 8px;
+  }
+  .reference-home .home-trial-intro h2 {
+    font-size: 28px;
+  }
+  .reference-home .home-grades-layout {
+    grid-template-columns: 1.1fr 0.9fr 1fr;
+    gap: 16px;
+  }
+  .reference-home .home-benefits-grid {
+    gap: 12px;
+  }
+  .reference-home .home-benefit {
+    gap: 8px;
+  }
+  .reference-home .home-benefit > span {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+  }
+}
+@media (max-width: 800px) {
+  .reference-home .home-math-hero {
+    min-height: 490px;
+  }
+  .reference-home .home-hero-image {
+    object-position: 57% center;
+  }
+  .reference-home .home-math-hero::after {
+    background: linear-gradient(90deg, #001a36ef, #001a3699 53%, #001a3620);
+  }
+  .reference-home .home-hero-copy {
+    width: 70%;
+  }
+  .reference-home .home-math-caption {
+    display: none;
+  }
+  .reference-home .feature-strip {
+    gap: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .reference-home .feature-strip h3 {
+    font-size: 16px;
+  }
+  .reference-home .home-trial-layout {
+    grid-template-columns: 1fr;
+  }
+  .reference-home .home-trial-intro {
+    grid-row: 1;
+    flex-direction: row;
+    justify-content: center;
+    max-width: 520px;
+    margin: auto;
+    width: 100%;
+  }
+  .reference-home .home-trial-art {
+    width: 150px;
+    max-height: 180px;
+  }
+  .reference-home .home-trial-card {
+    padding: 24px 16px 18px;
+  }
+  .reference-home .home-grades-layout {
+    grid-template-columns: 1.2fr 1fr;
+  }
+  .reference-home .home-math-art {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .reference-home .home-math-art img {
+    max-height: 210px;
+    width: auto;
+  }
+  .reference-home .home-videos .card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .reference-home .home-benefits-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .reference-home .home-math-hero {
+    min-height: 580px;
+    align-items: end;
+  }
+  .reference-home .home-hero-image {
+    object-position: 69% top;
+    height: 350px;
+  }
+  .reference-home .home-math-hero::after {
+    background: linear-gradient(
+      0deg,
+      #031b36 0%,
+      #031b36 25%,
+      #031b36ba 53%,
+      #031b3610 100%
+    );
+  }
+  .reference-home .home-hero-inner {
+    padding-block: 220px 32px;
+  }
+  .reference-home .home-hero-copy {
+    width: 100%;
+    max-width: none;
+    text-align: center;
+  }
+  .reference-home .home-hero-copy h1 {
+    font-size: 48px;
+  }
+  .reference-home .home-hero-copy h1 span {
+    font-size: 29px;
+  }
+  .reference-home .home-hero-copy .home-hero-tagline {
+    font-size: 17px;
+  }
+  .reference-home .home-hero-copy .home-hero-detail {
+    font-size: 15px;
+  }
+  .reference-home .hero-actions {
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .reference-home .hero-actions .site-button {
+    padding-inline: 15px;
+    font-size: 14px;
+  }
+  .reference-home .feature-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .reference-home .feature-strip > div:last-child {
+    grid-column: 1 / -1;
+  }
+  .reference-home .home-feature-section {
+    padding-block: 20px;
+  }
+  .reference-home .home-trial {
+    padding-block: 26px;
+  }
+  .reference-home .home-trial-intro h2 {
+    font-size: 26px;
+  }
+  .reference-home .home-trial-intro p {
+    font-size: 14px;
+  }
+  .reference-home .home-trial-art {
+    width: 115px;
+  }
+  .reference-home .home-trial-cards {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .reference-home .home-trial-card {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    text-align: right;
+    column-gap: 20px;
+    padding: 20px;
+  }
+  .reference-home .home-trial-icon {
+    grid-row: 1 / 4;
+    width: 60px;
+    margin: 0;
+  }
+  .reference-home .home-trial-icon > svg {
+    width: 48px;
+    height: 48px;
+  }
+  .reference-home .home-trial-icon::before {
+    right: -5px;
+  }
+  .reference-home .home-trial-icon::after {
+    left: -5px;
+  }
+  .reference-home .home-trial-card p {
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+  .reference-home .home-card-action {
+    width: fit-content;
+    min-width: 145px;
+  }
+  .reference-home .home-section-title h2 {
+    font-size: 22px;
+  }
+  .reference-home .home-section-title a {
+    font-size: 13px;
+  }
+  .reference-home .home-grades-layout {
+    grid-template-columns: 1fr;
+  }
+  .reference-home .home-grade-list {
+    order: 0;
+    padding: 14px;
+  }
+  .reference-home .home-grades-intro {
+    order: 1;
+    padding: 24px;
+  }
+  .reference-home .home-math-art {
+    grid-row: auto;
+    order: 2;
+  }
+  .reference-home .home-videos .card-grid {
+    grid-template-columns: 1fr;
+  }
+  .reference-home .home-benefits-grid {
+    gap: 10px;
+  }
+  .reference-home .home-benefit {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+    padding: 15px 8px;
+  }
+  .reference-home .home-join h2 {
+    font-size: 23px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reference-home :is(.home-trial-card, .home-benefit) {
+    transition: none;
+    transform: none !important;
+  }
+}

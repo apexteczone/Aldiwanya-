@@ -118,7 +118,7 @@ export default function NotificationBell() {
                   onClick={() => visit(item)}
                 >
                   <strong>
-                    {item.title}
+                    {item.type === "course_published" ? "مادة جديدة" : item.title}
                     {!item.readAt && <i aria-label="غير مقروء" />}
                   </strong>
                   <span>{item.message}</span>

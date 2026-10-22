@@ -1,5 +1,5 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import axios from '../../../../services/api'; 
+import usePlatform from '../../../../hooks/usePlatform';
 import logo from '/src/assets/whitelogo.png';
 import footerImage from '/src/assets/kiwait.png';
 
@@ -18,6 +18,7 @@ import {
 
 export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
   const navigate = useNavigate();
+  const { logout } = usePlatform();
   const {pathname} = useLocation();
 
   const menuItems = [
@@ -34,17 +35,11 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
 
   const handleLogout = async () => {
     try {
-      await axios.post('/auth/logout', {}, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      await logout();
     } catch (error) {
       console.error('خطأ أثناء تسجيل الخروج:', error?.response?.data || error.message);
     } finally {
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
-      navigate('/auth/login');
+      navigate('/login', { replace: true });
     }
   };
 
@@ -70,14 +65,14 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
           backgroundImage: `linear-gradient(to top, rgba(0, 24, 56, 0.25) 0%, rgba(0, 24, 56, 1) 45%), url(${footerImage})` 
         }}
         className={`
-          fixed md:static top-0 right-0 z-50 h-screen w-64 bg-navy-950 text-white flex flex-col justify-between p-4 border-l border-border-dark select-none bg-bottom bg-no-repeat bg-contain transition-transform duration-300 ease-in-out
+          fixed md:static top-0 right-0 z-50 h-dvh w-64 shrink-0 overflow-hidden bg-navy-950 text-white flex flex-col p-4 border-l border-border-dark select-none bg-bottom bg-no-repeat bg-contain transition-transform duration-300 ease-in-out
           ${isMobileOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
         `}
       >
-        <div className="flex flex-col h-full justify-between">
-          <div>
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex min-h-0 flex-1 flex-col">
             {/* Logo */}
-            <div className="flex items-center justify-between pb-2 mb-3 border-b border-border-dark">
+            <div className="flex shrink-0 items-center justify-between pb-2 mb-3 border-b border-border-dark">
               <div> 
                 <img src={logo} alt="logo" className="w-44 md:w-49" />
               </div>
@@ -92,7 +87,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
             </div>
 
             {/* Menu */}
-            <nav className="space-y-1">
+            <nav aria-label="التنقل الإداري" className="min-h-0 flex-1 overflow-y-auto overscroll-contain space-y-1 [scrollbar-width:thin]">
               {menuItems.map((item, index) => {
                 const Icon = item.icon;
                 return (
@@ -117,7 +112,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
           </div>
 
           {/* Logout */}
-          <div className="pt-3 border-t border-border-dark/60">
+          <div className="shrink-0 pt-3 border-t border-border-dark/60">
             <button 
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-text-muted hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"

@@ -110,7 +110,7 @@ export default function StudentsPage() {
     { header: 'رقم الهاتف', accessor: 'phone', className: 'text-text-secondary font-mono text-[11px] dir-ltr text-right' },
     { header: 'المرحلة', accessor: 'grade', className: 'font-medium text-text-primary' },
     { 
-      header: 'الكورسات المشترك بها', 
+      header: 'المواد المشترك بها',
       accessor: 'coursesCount', 
       className: 'text-center font-bold text-text-primary' 
     },

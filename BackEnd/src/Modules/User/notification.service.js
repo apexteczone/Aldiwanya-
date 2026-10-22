@@ -122,7 +122,7 @@ export async function notifyCourse(course) {
     _id: "course:" + course._id,
     audience: "Student",
     type: "course_published",
-    title: "كورس جديد",
+    title: "مادة جديدة",
     message: "متاح الآن: " + course.title,
     href: "/courses/" + course._id,
   });

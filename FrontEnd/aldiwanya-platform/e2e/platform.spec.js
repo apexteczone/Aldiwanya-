@@ -28,14 +28,21 @@ test("public pages show real empty states and separate login and registration", 
   page,
 }, info) => {
   await page.goto("/");
+  await expect(page).toHaveTitle("الرئيسية | الديوانية");
   await expect(
-    page.getByText("لا توجد دورات منشورة بعد.", { exact: true }),
+    page.getByText("لا توجد صفوف متاحة حاليًا.", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("لا توجد مذكرات منشورة بعد.", { exact: true }),
+    page.getByText("ستظهر المعاينات المجانية هنا عند نشرها.", { exact: true }),
   ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "آراء طلابنا" })).toHaveCount(0);
+  await expect(page.locator('.brand img')).toHaveAttribute('src', '/diwaniya-logo-colored.png');
+  await page.getByRole('link', {name: /اختبارات تجريبية/}).click();
+  await expect(page.getByText('لا توجد اختبارات منشورة بعد.')).toBeVisible();
+  await page.goBack();
   await screenshot(page, info, "home-empty-desktop");
   await page.getByRole("link", { name: "تسجيل الدخول", exact: true }).click();
+  await expect(page).toHaveTitle("تسجيل الدخول | الديوانية");
   await expect(
     page.getByRole("heading", { name: "تسجيل الدخول", exact: true }),
   ).toBeVisible();
@@ -45,6 +52,7 @@ test("public pages show real empty states and separate login and registration", 
     .getByRole("link", { name: "إنشاء حساب جديد", exact: true })
     .click();
   await expect(page.getByLabel("الاسم الكامل", { exact: true })).toBeVisible();
+  await expect(page).toHaveTitle("إنشاء حساب جديد | الديوانية");
   await expect(
     page.getByRole("button", { name: "تسجيل الدخول", exact: true }),
   ).toHaveCount(0);
@@ -88,17 +96,17 @@ test("dashboard publishing produces public courses, plans, free video and PDFs",
     name: "صف اختبار آلي",
     status: "active",
   });
-  const emptyGrade = await create("/admin/grades/create", { name: "صف بدون كورسات", status: "active" });
+  const emptyGrade = await create("/admin/grades/create", { name: "صف بدون مواد", status: "active" });
   await create("/admin/grades/create", { name: "صف غير متاح", status: "inactive" });
   const course = await create("/admin/courses", {
-    title: "كورس اختبار الربط",
+    title: "مادة اختبار الربط",
     description: "محتوى مؤقت داخل قاعدة الاختبار فقط.",
     grade: grade._id,
     subject: "مادة اختبار",
     status: "published",
   });
   courseId = course._id;
-  await create("/admin/courses", { title: "كورس غير منشور", grade: grade._id, subject: "مادة اختبار", status: "draft" });
+  await create("/admin/courses", { title: "مادة غير منشورة", grade: grade._id, subject: "مادة اختبار", status: "draft" });
   const lesson = await create("/admin/lessons", {
     title: "درس اختبار منشور",
     youtubeUrl:"https://youtu.be/aqz-KE-bpKQ",
@@ -129,38 +137,61 @@ test("dashboard publishing produces public courses, plans, free video and PDFs",
     },
   });
   expect(pdf.ok(), await pdf.text()).toBe(true);
+  const exam = await request.post('/api/v1/admin/pdfs', {
+    headers,
+    multipart: {
+      title: 'امتحان اختبار مجاني', type: 'امتحانات', course: courseId,
+      file: { name: 'exam.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF') },
+    },
+  });
+  expect(exam.ok(), await exam.text()).toBe(true);
   await page.goto("/");
-  await expect(page.getByRole("heading", {name:"صف بدون كورسات",exact:true})).toBeVisible();
+  await expect(page.locator('.home-videos').getByRole('heading', {name: 'درس اختبار منشور', exact:true})).toBeVisible();
+  await page.locator('.home-videos').getByRole('link', {name: /درس اختبار منشور/}).click();
+  await expect(page).toHaveURL(new RegExp('/lessons/' + lessonId));
+  await page.goto('/');
+  await page.getByRole('link', {name: /اختبارات تجريبية/}).click();
+  await expect(page.getByRole('heading', {name: 'امتحان اختبار مجاني', exact:true})).toBeVisible();
+  await expect(page.getByRole('heading', {name: 'مذكرة اختبار مجانية', exact:true})).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('heading', {name: 'امتحان اختبار مجاني', exact:true})).toBeVisible();
+  await page.getByRole('button', {name: 'الكل', exact:true}).click();
+  await expect(page.getByRole('heading', {name: 'مذكرة اختبار مجانية', exact:true})).toBeVisible();
+  await page.goto('/');
+  await expect(page.getByRole("heading", {name:"صف بدون مواد",exact:true})).toBeVisible();
   await expect(page.getByText("صف غير متاح", {exact:true})).toHaveCount(0);
   await screenshot(page, info, "home-public-grades");
   await page.setViewportSize({width:390,height:844});
   await screenshot(page, info, "home-public-grades-mobile");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-  await page.getByRole("link", {name:/صف بدون كورسات/}).click();
+  await page.getByRole("link", {name:/صف بدون مواد/}).click();
   await expect(page).toHaveURL(new RegExp("grade=" + emptyGrade._id));
-  await expect(page.getByText("لا توجد كورسات منشورة لهذا الصف بعد.")).toBeVisible();
-  await page.getByRole("navigation", {name:"مسار التصفح"}).getByRole("link", {name:"الصفوف الدراسية"}).click();
+  await expect(page.getByText("لا توجد مواد منشورة لهذا الصف بعد.")).toBeVisible();
+  await page.getByRole("button", {name:"فتح القائمة",exact:true}).click();
+  await page.getByRole("navigation", {name:"التنقل الرئيسي"}).getByRole("link", {name:"الرئيسية", exact:true}).click();
   await page.getByRole("link", {name:/صف اختبار آلي/}).click();
   await expect(page.locator("h1")).toHaveText("صف اختبار آلي");
-  await expect(page.getByText("كورس غير منشور", {exact:true})).toHaveCount(0);
-  await page.getByRole("heading", {name:"كورس اختبار الربط",exact:true}).click();
+  await expect(page.getByText("مادة غير منشورة", {exact:true})).toHaveCount(0);
+  await page.getByRole("heading", {name:"مادة اختبار الربط",exact:true}).click();
   await expect(page).toHaveURL(new RegExp("/courses/" + courseId));
+  await expect(page).toHaveTitle("مادة اختبار الربط | الديوانية");
   await expect(page.getByRole("button", {name:"درس اختبار منشور",exact:true})).toBeVisible();
   await expect(page.getByText("درس غير منشور", {exact:true})).toHaveCount(0);
   await page.getByRole("button", {name:"درس اختبار منشور",exact:true}).click();
   await expect(page).toHaveURL(new RegExp("/lessons/" + lessonId));
   await page.reload();
+  await expect(page).toHaveTitle("درس اختبار منشور | الديوانية");
   await expect(page.getByRole("heading", {name:"درس اختبار منشور",exact:true})).toBeVisible();
   await page.setViewportSize({width:1440,height:1000});
   await page.goto("/courses");
   await expect(
-    page.getByRole("heading", { name: "كورس اختبار الربط", exact: true }),
+    page.getByRole("heading", { name: "مادة اختبار الربط", exact: true }),
   ).toBeVisible();
-  await page.getByLabel("ابحث في الدورات", { exact: true }).fill("غير موجود");
-  await expect(page.getByText("لا توجد دورات تطابق البحث.")).toBeVisible();
+  await page.getByLabel("ابحث في المواد", { exact: true }).fill("غير موجود");
+  await expect(page.getByText("لا توجد مواد تطابق البحث.")).toBeVisible();
   await page.getByRole("button", { name: "إعادة تعيين الفلاتر" }).click();
   await expect(
-    page.getByRole("heading", { name: "كورس اختبار الربط" }),
+    page.getByRole("heading", { name: "مادة اختبار الربط" }),
   ).toBeVisible();
   await screenshot(page, info, "courses-published");
   await page.goto("/library");
@@ -183,7 +214,7 @@ test("dashboard publishing produces public courses, plans, free video and PDFs",
   await expect(page).toHaveURL(/\/admin\/dashboard$/);
   await page.goto("/admin/courses");
   await expect(
-    page.getByText("كورس اختبار الربط", { exact: true }),
+    page.getByText("مادة اختبار الربط", { exact: true }),
   ).toBeVisible();
 });
 test("registration, playback, favorites, progress and profile persist through the real API", async ({
@@ -205,7 +236,7 @@ test("registration, playback, favorites, progress and profile persist through th
   await page.getByRole("button", { name: "إنشاء حساب", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(
-    page.getByText("لم تبدأ أي دورة بعد. استكشف المحتوى وابدأ التعلم."),
+    page.getByText("لم تبدأ أي مادة بعد. استكشف المحتوى وابدأ التعلم."),
   ).toBeVisible();
   await page.route("https://media.example.test/flower.mp4", (route) =>
     route.fulfill({
@@ -233,7 +264,7 @@ test("registration, playback, favorites, progress and profile persist through th
   await screenshot(page, info, "course-player");
   await page.goto("/dashboard");
   await expect(
-    page.getByRole("heading", { name: "كورس اختبار الربط", exact: true }),
+    page.getByRole("heading", { name: "مادة اختبار الربط", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "درس اختبار منشور", exact: true }),
@@ -281,7 +312,7 @@ test('admin reference pages save lessons, video thumbnails and subscription plan
  await login(page,'admin@example.com','AldiwanyaLocal!2026');
  await expect(page).toHaveURL(/\/admin\/dashboard$/);
  await page.goto('/admin/lessons');
- await page.getByLabel('اختر الكورس',{exact:true}).selectOption(courseId);
+ await page.getByLabel('اختر المادة',{exact:true}).selectOption(courseId);
  await page.getByLabel('عنوان الدرس',{exact:true}).fill('درس تصميم الإدارة');
  await page.getByLabel('ترتيب الدرس',{exact:true}).fill('5');
  await page.getByLabel('وصف الدرس',{exact:true}).fill('وصف منشور من نموذج الإدارة.');
@@ -389,9 +420,14 @@ test('paid lesson returns through registration, checkout and verified payment',a
 // Keep the browser's actual save-to-disk check separate from the learning/payment flow.
 test('public PDF downloads save the expected file', async ({page}) => {
   await page.goto('/library');
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("link", { name: "تحميل الملف", exact: true }).click();
-  const download = await downloadPromise;
+  const documentCard = page.getByRole('article').filter({
+    has: page.getByRole('heading', { name: 'مذكرة اختبار مجانية', exact: true }),
+  });
+  await expect(documentCard).toBeVisible();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    documentCard.getByRole('link', { name: 'تحميل الملف', exact: true }).click(),
+  ]);
   expect(download.suggestedFilename()).toBe("document.pdf");
   expect(
     (await readFile(await download.path())).toString().startsWith("%PDF-"),

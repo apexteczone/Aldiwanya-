@@ -93,7 +93,7 @@ export default function CoursesManagementPage() {
         });
       }
     } catch (err) {
-      console.error('خطأ في جلب الكورسات:', err);
+      console.error('خطأ في جلب المواد:', err);
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +111,7 @@ export default function CoursesManagementPage() {
   }, [currentPage]);
 
   const handleDeleteCourse = async (id) => {
-    if (window.confirm('هل أنت تأكد من حذف هذا الكورس بكل محتوياته؟')) {
+    if (window.confirm('هل أنت متأكد من حذف هذه المادة بكل محتوياتها؟')) {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         await axios.delete(`${API_BASE_URL}/admin/courses/${id}/delete`, {
@@ -119,7 +119,7 @@ export default function CoursesManagementPage() {
         });
         fetchCourses();
       } catch (err) {
-        console.error('فشل حذف الكورس:', err);
+        console.error('فشل حذف المادة:', err);
         alert(err.response?.data?.message || 'حدث خطأ أثناء الحذف');
       }
     }
@@ -154,7 +154,7 @@ export default function CoursesManagementPage() {
       className: 'w-8 text-center' 
     },
     {
-      header: 'الكورس',
+      header: 'المادة',
       cell: (row) => (
         <div className="flex items-center gap-3">
           <div className="relative w-14 h-9 rounded-lg overflow-hidden bg-slate-900 border border-border shrink-0 group">
@@ -234,7 +234,7 @@ export default function CoursesManagementPage() {
         <div className="flex items-center gap-2">
           <button 
             onClick={() => navigate(`/admin/courses/edit/${row._id}`)}
-            title="تعديل الكورس"
+            title="تعديل المادة"
             className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
           >
             <Edit3 className="w-4 h-4" />
@@ -242,7 +242,7 @@ export default function CoursesManagementPage() {
 
           <button 
             onClick={() => handleDeleteCourse(row._id)}
-            title="حذف الكورس"
+            title="حذف المادة"
             className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
           >
             <Trash2 className="w-4 h-4" />
@@ -258,10 +258,10 @@ export default function CoursesManagementPage() {
         <div>
           <h1 className="text-xl font-extrabold text-navy-950 flex items-center gap-2">
             <BookOpen className="w-6 h-6 text-blue-600" />
-            <span>إدارة الكورسات</span>
+            <span>إدارة المواد</span>
           </h1>
           <p className="text-xs text-text-muted mt-1">
-            يمكنك إضافة وتعديل وتنظيم الكورسات والموديولات والدروس الخاصة بك
+            يمكنك إضافة وتعديل وتنظيم المواد والموديولات والدروس الخاصة بك
           </p>
         </div>
 
@@ -271,15 +271,15 @@ export default function CoursesManagementPage() {
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-sm cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>إضافة كورس جديد</span>
+          <span>إضافة مادة جديدة</span>
         </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <PaymentStatCard 
-          title="عدد الكورسات"
+          title="عدد المواد"
           value={stats.coursesCount}
-          changeText={`+${stats.coursesCount} كورس`}
+          changeText={`+${stats.coursesCount} مادة`}
           icon={BookOpen}
           theme="red"
         />
@@ -312,7 +312,7 @@ export default function CoursesManagementPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث عن كورس..."
+            placeholder="ابحث عن مادة..."
             className="w-full bg-surface text-text-primary rounded-xl pr-9 pl-3 py-2.5 border border-border focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
           />
           <Search className="w-4 h-4 text-text-muted absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />

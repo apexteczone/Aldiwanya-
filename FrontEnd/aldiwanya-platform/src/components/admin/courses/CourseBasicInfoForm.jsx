@@ -23,13 +23,13 @@ export function CourseBasicInfoForm({ formData, handleChange, gradesList = [] })
         <BookOpen className="w-5 h-5 text-blue-600" />
         <div>
           <h3 className="font-extrabold text-navy-950 text-sm">المعلومات الأساسية</h3>
-          <p className="text-[10px] text-text-muted">أدخل المعلومات الرئيسية للكورس</p>
+          <p className="text-[10px] text-text-muted">أدخل المعلومات الرئيسية للمادة</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         
-        {/* عنوان الكورس */}
+        {/* عنوان المادة */}
         <div className="space-y-1">
           <label className="font-bold text-text-secondary block">
             عنوان المادة <span className="text-rose-500">*</span>
@@ -71,10 +71,10 @@ export function CourseBasicInfoForm({ formData, handleChange, gradesList = [] })
 
       </div>
 
-      {/* وصف الكورس */}
+      {/* وصف المادة */}
       <div className="space-y-1 pt-2">
         <label className="font-bold text-text-secondary block">
-          وصف الكورس 
+          وصف المادة
         </label>
         
         <div className="border border-border rounded-xl overflow-hidden bg-surface">
@@ -98,7 +98,7 @@ export function CourseBasicInfoForm({ formData, handleChange, gradesList = [] })
             rows={4}
             value={formData.description || ''}
             onChange={handleChange}
-            placeholder="اكتب وصف الكورس هنا ..."
+            placeholder="اكتب وصف المادة هنا ..."
             className="w-full p-3 bg-transparent text-text-primary focus:outline-none resize-none font-medium"
           />
         </div>

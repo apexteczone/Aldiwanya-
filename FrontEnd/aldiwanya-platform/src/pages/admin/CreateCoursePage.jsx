@@ -110,15 +110,15 @@ export default function CreateCoursePage() {
         },
       });
 
-      alert('تم إنشاء الكورس بنجاح!');
+      alert('تم إنشاء المادة بنجاح!');
       navigate('/admin/courses');
     } catch (err) {
-      console.error('خطأ في حفظ الكورس:', err.response?.data || err);
+      console.error('خطأ في حفظ المادة:', err.response?.data || err);
       
       const serverMessage = 
         err.response?.data?.error?.message || 
         err.response?.data?.message || 
-        'حدث خطأ أثناء حفظ الكورس';
+        'حدث خطأ أثناء حفظ المادة';
         
       alert(`فشل الحفظ: ${serverMessage}`);
     } finally {
@@ -137,15 +137,15 @@ export default function CreateCoursePage() {
               onClick={() => navigate('/admin/courses')}
               className="hover:text-text-primary transition-colors cursor-pointer"
             >
-              إدارة الكورسات
+              إدارة المواد
             </button>
             <span>&gt;</span>
-            <span className="text-blue-600 font-bold">إضافة كورس</span>
+            <span className="text-blue-600 font-bold">إضافة مادة</span>
           </div>
           <h1 className="text-xl font-extrabold text-navy-950 flex items-center gap-2">
-            <span>+ إضافة كورس جديد</span>
+            <span>+ إضافة مادة جديدة</span>
           </h1>
-          <p className="text-text-muted mt-0.5">أضف تفاصيل الكورس والمحتوى التعليمي</p>
+          <p className="text-text-muted mt-0.5">أضف تفاصيل المادة والمحتوى التعليمي</p>
         </div>
       </div>
 

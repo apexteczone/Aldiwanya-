@@ -17,6 +17,11 @@ and local MongoDB 9 are the runtime versions used for the lesson/payment tests.
 5. Mount persistent storage at `UPLOAD_DIR`, readable and writable by the service.
    Back up MongoDB and this directory together. Use `/health` for readiness.
 
+PDF uploads allow up to 35 MiB (36,700,160 bytes) per file. Configure the hosting
+proxy's request-body limit above this (for example, 40 MiB) to allow multipart
+form metadata as well. The admin upload page validates the same limit and shows
+an Arabic error message. Image and avatar limits are unchanged.
+
 The backend serves the built frontend including direct SPA routes. Browser calls
 use `/api/v1` on the same origin. Development uses backend port 5000 and Vite at
 127.0.0.1:5173. The optional frontend `.env.example` contains public configuration
@@ -102,6 +107,24 @@ current content and design. Account password controls remain available separatel
 in the same page. No screenshot example data is seeded into the normal database.
 
 ### Checks
+
+Local release verification (2026-10-22): the production frontend build, lint and
+all 37 backend checks passed. Nine browser flows passed against the built frontend
+served by the backend and a disposable MongoDB, including public content, admin
+publication, account settings, responsive logout, avatars/notifications and the
+paid lesson registration/checkout/return flow with a simulated provider.
+
+The retained tenth browser check, saving a downloaded PDF to disk, still reports
+`download.path: canceled`. A standalone plain-text download outside this project
+reproduces the cancellation in both bundled Chromium and installed Chrome. PDF
+upload/download HTTP checks pass; verify browser saving on the deployment machine.
+The download test now selects its named document instead of an ambiguous button.
+
+SMTP delivery and real MyFatoorah payments still require server credentials and
+external verification. Checkout remains disabled in the local configuration.
+A previous concurrent-renewal test run returned a transient settlement-lock 503;
+the latest suite passed, but that intermittent case has not been changed by this
+UI release and needs further review before enabling live payments.
 
 Run `npm run lint`, `npm run build`, and `npm test` at the root. The integration
 suite requires a disposable local MongoDB at 127.0.0.1:27028; it creates and removes

@@ -6,13 +6,22 @@ import {
   UploadCloud, 
   ArrowRight, 
   Save, 
+  FileWarning,
   X 
 } from 'lucide-react';
+
+const MAX_PDF_SIZE_MB = 35;
+const MAX_PDF_SIZE_BYTES = MAX_PDF_SIZE_MB * 1024 * 1024;
+const PDF_SIZE_ERROR = {
+  title: 'حجم الملف أكبر من المسموح',
+  description: `الحد الأقصى لرفع ملف PDF هو ${MAX_PDF_SIZE_MB} ميجابايت. اختر ملفًا أصغر أو اضغط الملف ثم حاول مرة أخرى.`,
+};
 
 export default function UploadPdfPage() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState(null);
 
   // حالات القوائم القادمة من قاعدة البيانات حصراً
   const [gradesList, setGradesList] = useState([]);
@@ -65,8 +74,15 @@ export default function UploadPdfPage() {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setUploadError(null);
       if (file.type !== 'application/pdf') {
-        alert('يرجى اختيار ملف بصيغة PDF فقط');
+        setUploadError({title: 'صيغة الملف غير مدعومة', description: 'يرجى اختيار ملف بصيغة PDF فقط.'});
+        e.target.value = '';
+        return;
+      }
+      if (file.size > MAX_PDF_SIZE_BYTES) {
+        setUploadError(PDF_SIZE_ERROR);
+        e.target.value = '';
         return;
       }
       setSelectedFile(file);
@@ -87,10 +103,11 @@ export default function UploadPdfPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedFile) {
-      alert('يرجى ارفاق ملف الـ PDF أولاً');
+      setUploadError({title: 'لم يتم اختيار ملف', description: 'اختر ملف PDF لإرفاقه قبل حفظ البيانات.'});
       return;
     }
 
+    setUploadError(null);
     setIsSubmitting(true);
     setUploadProgress(10);
 
@@ -106,6 +123,8 @@ export default function UploadPdfPage() {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       await axios.post('/admin/pdfs', dataPayload, {
+        timeout: 300000,
+        quiet: true,
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -120,7 +139,9 @@ export default function UploadPdfPage() {
       navigate('/admin/pdfs');
     } catch (error) {
       console.error('خطأ أثناء رفع الملف:', error);
-      alert('حدث خطأ أثناء رفع الملف، يرجى المحاولة لاحقاً');
+      setUploadError(error.response?.status === 413
+        ? PDF_SIZE_ERROR
+        : {title: 'تعذر رفع الملف', description: 'لم نتمكن من إتمام الرفع. تحقق من اتصالك ثم حاول مرة أخرى.'});
     } finally {
       setIsSubmitting(false);
     }
@@ -174,10 +195,13 @@ export default function UploadPdfPage() {
                   <UploadCloud className="w-6 h-6" />
                 </div>
                 <span className="font-bold text-text-primary">اضغط هنا لترفيق الملف أو اسحبه إلى هنا</span>
-                <span className="text-[10px] text-text-muted">يدعم ملفات PDF فقط (بحد أقصى 50MB)</span>
+                <span className="text-[10px] text-text-muted">يدعم ملفات PDF فقط (بحد أقصى {MAX_PDF_SIZE_MB}MB)</span>
                 <input 
                   type="file" 
                   accept=".pdf" 
+                  aria-label="اختيار ملف PDF"
+                  aria-invalid={Boolean(uploadError)}
+                  aria-describedby={uploadError ? 'pdf-upload-error' : undefined}
                   onChange={handleFileSelect} 
                   className="hidden" 
                 />
@@ -204,6 +228,20 @@ export default function UploadPdfPage() {
                 </button>
               </div>
             )}
+            {uploadError && (
+              <div id="pdf-upload-error" role="alert" dir="rtl" className="mt-3 flex items-start gap-3 rounded-2xl border border-blue-200 bg-gradient-to-l from-blue-50 to-white p-4 text-navy-950 shadow-xs">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-navy-950 text-blue-300">
+                  <FileWarning className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className="text-sm font-extrabold">{uploadError.title}</p>
+                  <p className="text-xs leading-6 text-text-secondary">{uploadError.description}</p>
+                </div>
+                <button type="button" onClick={() => setUploadError(null)} aria-label="إغلاق رسالة الخطأ" className="shrink-0 rounded-lg p-1 text-blue-600 transition-colors hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500">
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* 2. عنوان الملف */}
@@ -222,7 +260,7 @@ export default function UploadPdfPage() {
             />
           </div>
 
-          {/* 3. الصف الدراسي والكورس (من قاعدة البيانات حصراً) */}
+          {/* 3. الصف الدراسي والمادة (من قاعدة البيانات حصراً) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             
             {/* الصف الدراسي */}
@@ -246,10 +284,10 @@ export default function UploadPdfPage() {
               </select>
             </div>
 
-            {/* الكورس المسجل من الداتا بيز */}
+            {/* المادة المسجلة من الداتا بيز */}
             <div className="space-y-1">
               <label className="font-bold text-text-secondary block">
-                الكورس / المادة <span className="text-rose-500">*</span>
+                المادة <span className="text-rose-500">*</span>
               </label>
               <select
                 name="courseId"
@@ -258,7 +296,7 @@ export default function UploadPdfPage() {
                 required
                 className="w-full bg-surface text-text-primary rounded-xl px-3 py-2.5 border border-border focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium cursor-pointer"
               >
-                <option value="">اختر الكورس...</option>
+                <option value="">اختر المادة...</option>
                 {coursesList.filter(c => String(c.grade?._id || c.grade) === formData.gradeId).map((c) => (
                   <option key={c.id || c._id} value={c.id || c._id}>
                     {c.title || c.name}

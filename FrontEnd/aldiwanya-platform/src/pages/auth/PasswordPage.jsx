@@ -60,12 +60,7 @@ export default function PasswordPage({ reset = false }) {
         title={title}
         subtitle="لا تقلق .. نساعدك في استعادة وصولك إلى حسابك"
         compact
-      >
-        <p className="hero-detail">
-          <ShieldCheck size={21} />
-          أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور
-        </p>
-      </Hero>
+      />
       <section className="site-container password-grid section">
         <div className="site-panel password-form">
           <LockKeyhole className="large-icon" />

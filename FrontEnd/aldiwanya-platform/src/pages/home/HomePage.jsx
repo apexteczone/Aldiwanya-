@@ -2,121 +2,243 @@ import { Link } from "react-router-dom";
 import {
   ArrowLeft,
   BookOpen,
+  BriefcaseBusiness,
+  ChartNoAxesCombined,
+  ClipboardList,
   CreditCard,
   FileText,
   Globe,
   GraduationCap,
+  Headphones,
+  MonitorPlay,
   PlayCircle,
+  Star,
+  UserRoundPlus,
   Users,
 } from "lucide-react";
 import useResource from "../../hooks/useResource";
+import usePlatform from "../../hooks/usePlatform";
 import {
-  Benefits,
-  CourseCard,
   Empty,
-  Hero,
-  PdfCard,
-  PlanCard,
   ResourceState,
-  SectionTitle,
   VideoCard,
 } from "../../components/common/PlatformUI";
+import "./HomePage.css";
+
+const features = [
+  [BriefcaseBusiness, "محتوى مسجل", "فيديوهات وشرح مبسط"],
+  [Globe, "دعم اللغة العربية", "تجربة عربية متكاملة"],
+  [CreditCard, "نظام اشتراكات مرن", "اختر الخطة المناسبة لك"],
+  [FileText, "مكتبة PDF مجانية", "لجميع الزوار والطلاب"],
+  [Users, "لوحات تحكم متكاملة", "للطلاب والمدرسين والإدارة"],
+];
+const trials = [
+  {
+    icon: ClipboardList,
+    title: "اختبارات تجريبية",
+    text: "نماذج PDF لمراجعة مستواك",
+    to: "/library?category=امتحانات",
+    action: "استعرض الاختبارات",
+  },
+  {
+    icon: FileText,
+    title: "ملفات وملخصات",
+    text: "لدعم المذاكرة وفهم الموضوعات",
+    to: "/library",
+    action: "استعرض الملفات",
+  },
+  {
+    icon: MonitorPlay,
+    title: "دروس تفاعلية",
+    text: "شاهد الشرح المسجل وجرّب بنفسك",
+    to: "/previews",
+    action: "ابدأ التجربة",
+  },
+];
+const benefits = [
+  [BookOpen, "المحتوى الدراسي", "كل موادك في مكان واحد"],
+  [Star, "محتوى تعليمي", "دروس ومذكرات للمراجعة"],
+  [ChartNoAxesCombined, "متابعة مستمرة", "تابع تقدمك في الدروس"],
+  [Headphones, "تواصل مع المنصة", "نساعدك في رحلتك التعليمية"],
+];
 export default function HomePage() {
-  const grades = useResource("/grades"),
-    courses = useResource("/courses"),
-    pdfs = useResource("/library/pdfs"),
-    plans = useResource("/plan/getActivePlans"),
-    videos = useResource("/previews");
+  const grades = useResource("/grades");
+  const videos = useResource("/previews");
+  const { profile } = usePlatform();
   return (
-    <>
-      <Hero
-        title={
-          <>
-            الديوانية<span>منصة تعليمية عربية</span>
-          </>
-        }
-        subtitle="تعلم بمرونة .. من أي مكان .. في أي وقت"
-      >
-        <p className="hero-detail">
-          محتوى تعليمي مسجل، مع الوصول المجاني إلى المكتبة والمذكرات التعليمية.
-        </p>
-        <div className="hero-actions">
-          <a className="site-button" href="#grades">
-            استعرض الصفوف
-            <ArrowLeft size={18} />
-          </a>
-          <Link className="site-button outline" to="/previews">
-            <PlayCircle size={18} />
-            جرّب المحتوى المجاني
-          </Link>
-        </div>
-      </Hero>
-      <div className="feature-strip site-container">
-        {[
-          [BookOpen, "محتوى مسجل", "دروس وشرح مبسط"],
-          [Globe, "دعم اللغة العربية", "تجربة عربية متكاملة"],
-          [CreditCard, "خطط الاشتراك", "اختر ما يناسبك"],
-          [FileText, "مكتبة PDF مجانية", "لجميع الزوار والطلاب"],
-          [Users, "حسابك التعليمي", "تابع رحلتك من مكان واحد"],
-        ].map(([Icon, title, text]) => (
-          <div key={title}>
-            <Icon />
-            <h3>{title}</h3>
-            <p>{text}</p>
-          </div>
-        ))}
-      </div>
-      <section id="grades" aria-labelledby="grades-title" className="site-container section grades-section">
-        <h2 id="grades-title">الصفوف الدراسية</h2>
-        <p className="grades-intro">اختر صفك الدراسي، ثم استكشف الكورسات والدروس المتاحة قبل تسجيل الدخول.</p>
-        <ResourceState resource={grades}>
-          {grades.data?.length ? (
-            <div className="card-grid four">
-              {grades.data.map((grade) => (
-                <Link key={grade._id} className="site-panel grade-card" to={`/courses?grade=${grade._id}`}>
-                  <span className="grade-icon"><GraduationCap size={32} /></span>
-                  <h3>{grade.name}</h3>
-                  {grade.description && <p>{grade.description}</p>}
-                  <span className="grade-action">عرض الكورسات <ArrowLeft size={18} /></span>
-                </Link>
-              ))}
-            </div>
-          ) : <Empty icon={GraduationCap}>لا توجد صفوف متاحة حاليًا.</Empty>}
-        </ResourceState>
-      </section>
-      <section className="site-container section">
-        <SectionTitle
-          title="أحدث الدورات"
-          to="/courses"
-          label="تصفح جميع الدورات"
+    <div className="reference-home">
+      <section className="home-math-hero" aria-labelledby="home-title">
+        <img
+          className="home-hero-image"
+          src="/home-math-hero.webp"
+          alt=""
+          fetchPriority="high"
+          width="1536"
+          height="1024"
         />
-        <ResourceState resource={courses}>
-          {courses.data?.length ? (
-            <div className="card-grid four">
-              {[...courses.data]
-                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                .slice(0, 4)
-                .map((c) => (
-                  <CourseCard key={c._id} course={c} />
-                ))}
+        <div className="site-container home-hero-inner">
+          <div className="home-hero-copy hero-copy">
+            <h1 id="home-title">
+              الديوانية <span>منصة تعليمية عربية</span>
+            </h1>
+            <p className="home-hero-tagline">
+              تعلم بمرونة .. من أي مكان .. في أي وقت
+            </p>
+            <p className="home-hero-detail">
+              افهم، تدرّب، وتقدّم في دراستك مع دروس مسجلة ومذكرات تعليمية تساعدك
+              في كل خطوة.
+            </p>
+            <div className="hero-actions">
+              <a className="site-button" href="#grades">
+                ابدأ الآن <ArrowLeft size={19} />
+              </a>
+              <Link className="site-button outline" to="/previews">
+                <PlayCircle size={20} /> جرّب المحتوى المجاني
+              </Link>
             </div>
-          ) : (
-            <Empty>لا توجد دورات منشورة بعد.</Empty>
-          )}
-        </ResourceState>
+          </div>
+          <div className="home-math-caption" aria-hidden="true">
+            <span lang="en">Mathematics</span>
+            <strong>
+              الرياضيات
+              <br />
+              مفتاح مستقبلك
+            </strong>
+          </div>
+        </div>
       </section>
-      <section className="navy-section section">
+      <section className="home-feature-section" aria-label="مميزات المنصة">
+        <div className="feature-strip site-container">
+          {features.map(([Icon, title, text]) => (
+            <div key={title}>
+              <span className="feature-icon">
+                <Icon />
+              </span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="home-trial home-dark" aria-labelledby="trial-title">
+        <div className="site-container home-trial-layout">
+          <div className="home-trial-cards">
+            {trials.map(({ icon: Icon, title, text, to, action }) => (
+              <Link className="home-trial-card" key={title} to={to}>
+                <span className="home-trial-icon">
+                  <Icon strokeWidth={1.5} />
+                </span>
+                <h3>{title}</h3>
+                <p>{text}</p>
+                <span className="home-card-action">
+                  {action}
+                  <ArrowLeft size={17} />
+                </span>
+              </Link>
+            ))}
+          </div>
+          <div className="home-trial-intro">
+            <div>
+              <h2 id="trial-title">التجربة المجانية</h2>
+              <p>
+                ابدأ رحلتك معنا الآن واكتشف
+                <br />
+                المحتوى المجاني على الديوانية
+              </p>
+              <Link className="site-button" to="/previews">
+                جرّب الآن <ArrowLeft size={17} />
+              </Link>
+            </div>
+            <img
+              className="home-trial-art"
+              src="/home-free-trial.webp"
+              alt=""
+              width="1310"
+              height="1200"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      </section>
+      <section
+        id="grades"
+        className="home-grades home-dark"
+        aria-labelledby="grades-title"
+      >
         <div className="site-container">
-          <SectionTitle
-            title="فيديوهات مختارة"
-            to="/previews"
-            label="مشاهدة المزيد"
-          />
+          <div className="section-title home-section-title">
+            <h2 id="grades-title">
+              <GraduationCap />
+              المواد الدراسية
+            </h2>
+          </div>
+          <div className="home-grades-layout">
+            <div className="home-grade-list">
+              <ResourceState resource={grades}>
+                {grades.data?.length ? (
+                  grades.data.map((grade, index) => (
+                    <Link
+                      key={grade._id}
+                      className={`grade-card home-grade-row grade-tone-${index % 3}`}
+                      to={`/courses?grade=${grade._id}`}
+                    >
+                      <span className="home-grade-icon">
+                        <GraduationCap size={25} />
+                      </span>
+                      <div>
+                        <h3>{grade.name}</h3>
+                        {grade.description && <p>{grade.description}</p>}
+                      </div>
+                      <ArrowLeft size={19} className="home-grade-arrow" />
+                    </Link>
+                  ))
+                ) : (
+                  <Empty icon={GraduationCap}>لا توجد صفوف متاحة حاليًا.</Empty>
+                )}
+              </ResourceState>
+            </div>
+            <div className="home-grades-intro">
+              <h3>المواد الدراسية</h3>
+              <p>
+                اختر صفك واستكشف
+                <br />
+                المواد والدروس المتاحة
+              </p>
+              <Link className="site-button home-purple-button" to="/courses">
+                تصفح المراحل <ArrowLeft size={20} />
+              </Link>
+            </div>
+            <div className="home-math-art">
+              <img
+                src="/home-math-books.webp"
+                alt=""
+                width="1536"
+                height="1024"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+      <section
+        className="home-videos home-dark"
+        aria-labelledby="free-videos-title"
+      >
+        <div className="site-container">
+          <div className="section-title home-section-title">
+            <h2 id="free-videos-title">
+              <PlayCircle />
+              فيديوهات مجانية
+            </h2>
+            <Link to="/previews">
+              عرض الكل <ArrowLeft size={16} />
+            </Link>
+          </div>
           <ResourceState resource={videos}>
             {videos.data?.length ? (
               <div className="card-grid four">
-                {videos.data.slice(0, 4).map((v) => (
-                  <VideoCard key={v._id} video={v} />
+                {videos.data.slice(0, 4).map((video) => (
+                  <VideoCard key={video._id} video={video} />
                 ))}
               </div>
             ) : (
@@ -127,71 +249,31 @@ export default function HomePage() {
           </ResourceState>
         </div>
       </section>
-      <section className="site-container section">
-        <SectionTitle
-          title="المكتبة المجانية"
-          to="/library"
-          label="تصفح المكتبة الكاملة"
-        />
-        <div className="home-library">
-          <ResourceState resource={pdfs}>
-            {pdfs.data?.length ? (
-              <div className="card-grid four">
-                {pdfs.data.slice(0, 4).map((p) => (
-                  <PdfCard compact key={p._id} pdf={p} />
-                ))}
+      <section className="home-benefits" aria-label="رحلتك مع الديوانية">
+        <div className="site-container home-benefits-grid">
+          {benefits.map(([Icon, title, text]) => (
+            <div className="home-benefit" key={title}>
+              <span>
+                <Icon size={27} />
+              </span>
+              <div>
+                <h3>{title}</h3>
+                <p>{text}</p>
               </div>
-            ) : (
-              <Empty icon={FileText}>لا توجد مذكرات منشورة بعد.</Empty>
-            )}
-          </ResourceState>
-          <div className="soft-panel">
-            <img className="library-books" src="/learning-books.png" alt="" loading="lazy" />
-            <h3>ملفات PDF تعليمية مجانية</h3>
-            <p>لجميع الزوار والطلاب</p>
-            <Link to="/library" className="site-button">
-              استعرض الملفات
-            </Link>
-          </div>
+            </div>
+          ))}
         </div>
       </section>
-      <section className="home-plans navy-section section">
-        <div className="site-container">
-          <div>
-            <h2>اختر خطتك المناسبة</h2>
-            <p>تابع رحلتك التعليمية مع الديوانية</p>
-          </div>
-          <ResourceState resource={plans}>
-            {plans.data?.length ? (
-              <div className="card-grid">
-                {plans.data.map((p) => (
-                  <PlanCard key={p._id} plan={p} />
-                ))}
-              </div>
-            ) : (
-              <Empty>لا توجد خطط اشتراك متاحة حاليًا.</Empty>
-            )}
-          </ResourceState>
-        </div>
-      </section>
-      <section className="section">
-        <div className="site-container">
-          <SectionTitle title="لماذا الديوانية؟" />
-        </div>
-        <Benefits />
-      </section>
-      <section className="site-container section">
-        <SectionTitle title="آراء طلابنا" />
-        <Empty icon={Users}>لم تُنشر آراء بعد.</Empty>
-      </section>
-      <section className="join-banner">
+      <section className="join-banner home-join">
         <h2>ابدأ رحلتك التعليمية الآن</h2>
-        <p>انضم إلى الديوانية واستكشف المحتوى المتاح</p>
-        <Link className="site-button" to="/register">
-          إنشاء حساب مجاني
-          <ArrowLeft size={16} />
+        <p>
+          انضم إلى الديوانية واستكشف الدروس والمذكرات التي تساعدك على التقدم
+        </p>
+        <Link className="site-button" to={profile ? "/courses" : "/register"}>
+          <UserRoundPlus size={18} />
+          {profile ? "استكشف المحتوى التعليمي" : "إنشاء حساب مجاني"}
         </Link>
       </section>
-    </>
+    </div>
   );
 }

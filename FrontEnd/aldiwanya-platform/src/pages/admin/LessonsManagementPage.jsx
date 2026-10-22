@@ -225,11 +225,11 @@ export default function LessonsManagementPage() {
               <div className="ref-grid">
                 <label className="ref-field">
                   <span>
-                    اختر الكورس <em>*</em>
+                    اختر المادة <em>*</em>
                   </span>
                   <select
                     name="courseId"
-                    aria-label="اختر الكورس"
+                    aria-label="اختر المادة"
                     required
                     value={form.courseId}
                     onChange={change}
@@ -238,7 +238,7 @@ export default function LessonsManagementPage() {
                       !!lessons.find((l) => l._id === editing)?.moduleId
                     }
                   >
-                    <option value="">اختر الكورس</option>
+                    <option value="">اختر المادة</option>
                     {courses.map((c) => (
                       <option key={c._id} value={c._id}>
                         {c.grade?.name} — {c.title}
@@ -438,7 +438,7 @@ export default function LessonsManagementPage() {
               {[
                 "#",
                 "عنوان الدرس",
-                "الكورس",
+                "المادة",
                 "الصورة",
                 "الوصول",
                 "الترتيب",
